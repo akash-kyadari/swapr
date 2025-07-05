@@ -1,0 +1,15 @@
+const express = require('express');
+const auth = require('../middleware/auth');
+const userController = require('../controllers/userController');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
+const router = express.Router();
+
+// Get current user's profile
+router.get('/me', auth, userController.getProfile);
+// Update profile (with optional avatar upload)
+router.put('/me', auth, upload.single('avatar'), userController.updateProfile);
+// Get user by ID
+router.get('/:id', userController.getUserById);
+
+module.exports = router; 
