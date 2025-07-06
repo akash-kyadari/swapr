@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
 import {
   HomeIcon,
   UserGroupIcon,
@@ -9,11 +9,11 @@ import {
   Bars3Icon,
   XMarkIcon,
   UserCircleIcon,
-  ArrowRightOnRectangleIcon
-} from '@heroicons/react/24/outline';
-import useUserStore from '../store/useUserStore';
-import Avatar from './Avatar';
-import ThemeToggle from './ThemeToggle';
+  ArrowRightOnRectangleIcon,
+} from "@heroicons/react/24/outline";
+import useUserStore from "../store/useUserStore";
+import Avatar from "./Avatar";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Navigation() {
   const { user, logout } = useUserStore();
@@ -21,10 +21,10 @@ export default function Navigation() {
   const router = useRouter();
 
   const navigation = [
-    { name: 'Home', href: '/', icon: HomeIcon },
-    { name: 'Skills', href: '/skills', icon: BriefcaseIcon },
-    { name: 'Swap', href: '/swap', icon: UserGroupIcon },
-    { name: 'Messages', href: '/messages', icon: ChatBubbleLeftRightIcon },
+    { name: "Home", href: "/", icon: HomeIcon },
+    { name: "Skills", href: "/skills", icon: BriefcaseIcon },
+    { name: "Swap", href: "/swap", icon: UserGroupIcon },
+    { name: "Messages", href: "/messages", icon: ChatBubbleLeftRightIcon },
   ];
 
   return (
@@ -47,8 +47,8 @@ export default function Navigation() {
                   href={item.href}
                   className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                     router.pathname === item.href
-                      ? 'text-blue-600 bg-blue-50 dark:text-primary-300 dark:bg-secondary-800' 
-                      : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50 dark:text-secondary-200 dark:hover:text-primary-300 dark:hover:bg-secondary-800'
+                      ? "text-blue-600 bg-blue-50 dark:text-primary-300 dark:bg-secondary-800"
+                      : "text-gray-700 hover:text-blue-600 hover:bg-blue-50 dark:text-secondary-200 dark:hover:text-primary-300 dark:hover:bg-secondary-800"
                   }`}
                 >
                   <item.icon className="w-5 h-5 mr-2" />
@@ -64,11 +64,13 @@ export default function Navigation() {
               <>
                 <Link
                   href="/profile/edit"
-                  className="flex items-center space-x-3 group hover:bg-blue-50 rounded-lg px-2 py-1 transition-all duration-200"
+                  className="flex items-center  group hover:bg-blue-50 rounded-lg px-2 py-1 transition-all duration-200"
                 >
                   <Avatar src={user.avatar} name={user.name} size={32} />
-                  <div className="text-sm">
-                    <p className="font-medium text-gray-900 group-hover:text-blue-600">{user.name}</p>
+                  <div className="text-sm hidden lg:block">
+                    <p className="font-medium text-gray-900 group-hover:text-blue-600">
+                      {user.name}
+                    </p>
                     <p className="text-gray-500">{user.email}</p>
                   </div>
                 </Link>
@@ -78,7 +80,6 @@ export default function Navigation() {
                 >
                   Logout
                 </button>
-                <ThemeToggle />
               </>
             ) : (
               <>
@@ -158,8 +159,8 @@ export default function Navigation() {
                 href={item.href}
                 className={`flex items-center px-3 py-2 text-base font-medium rounded-lg transition-all duration-200 ${
                   router.pathname === item.href
-                    ? 'text-blue-600 bg-blue-50 dark:text-primary-300 dark:bg-secondary-800' 
-                    : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50 dark:text-secondary-200 dark:hover:text-primary-300 dark:hover:bg-secondary-800'
+                    ? "text-blue-600 bg-blue-50 dark:text-primary-300 dark:bg-secondary-800"
+                    : "text-gray-700 hover:text-blue-600 hover:bg-blue-50 dark:text-secondary-200 dark:hover:text-primary-300 dark:hover:bg-secondary-800"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -172,4 +173,4 @@ export default function Navigation() {
       )}
     </nav>
   );
-} 
+}

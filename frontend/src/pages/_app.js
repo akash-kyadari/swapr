@@ -1,12 +1,12 @@
-import '../styles/globals.css';
-import Layout from '../components/Layout';
-import useUserStore from '../store/useUserStore';
-import useThemeStore from '../store/useThemeStore';
-import { useEffect } from 'react';
-import { useRouter } from 'next/router';
-import ToastContainer from '../components/ToastContainer';
+import "../styles/globals.css";
+import Layout from "../components/Layout";
+import useUserStore from "../store/useUserStore";
+import useThemeStore from "../store/useThemeStore";
+import { useEffect } from "react";
+import { useRouter } from "next/router";
+import ToastContainer from "../components/ToastContainer";
 
-const protectedRoutes = ['/dashboard', '/profile/edit'];
+const protectedRoutes = ["/profile/edit"];
 
 export default function App({ Component, pageProps }) {
   const { user, loading, fetchUser } = useUserStore();
@@ -17,7 +17,7 @@ export default function App({ Component, pageProps }) {
     fetchUser();
     // Ensure theme class is set on initial load
     const { theme } = useThemeStore.getState();
-    if (typeof document !== 'undefined') {
+    if (typeof document !== "undefined") {
       const html = document.documentElement;
       html.classList.add(theme);
     }
@@ -26,14 +26,21 @@ export default function App({ Component, pageProps }) {
 
   useEffect(() => {
     // Debug logging
-    console.log('Auth Debug:', { user, loading, path: router.pathname });
+    console.log("Auth Debug:", { user, loading, path: router.pathname });
     if (!loading && !user && protectedRoutes.includes(router.pathname)) {
-      console.log('Redirecting to /auth/login because user is not authenticated');
-      router.replace('/auth/login');
+      console.log(
+        "Redirecting to /auth/login because user is not authenticated"
+      );
+      router.replace("/auth/login");
     }
   }, [user, loading, router.pathname]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
 
   return (
     <Layout>
