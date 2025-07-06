@@ -1,8 +1,13 @@
 import { useEffect } from 'react';
 import Head from 'next/head';
-import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import useUserStore from '../store/useUserStore';
-import WhatsAppChat from '../components/WhatsAppChat';
+import dynamic from 'next/dynamic';
+import Loader from '../components/Loader';
+
+const WhatsAppChat = dynamic(() => import('../components/WhatsAppChat'), {
+  ssr: false,
+  loading: () => <div className="flex justify-center mt-10"><Loader /></div>,
+});
 
 export default function Messages() {
   const { user, loading: userLoading } = useUserStore();
@@ -10,10 +15,10 @@ export default function Messages() {
   // Show loading while user state is being determined
   if (userLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50 dark:from-secondary-900 dark:via-secondary-800 dark:to-secondary-700">
         <div className="text-center">
-          <ArrowPathIcon className="w-12 h-12 text-primary-600 animate-spin mx-auto mb-4" />
-          <p className="text-secondary-600">Loading messages...</p>
+          <Loader />
+          <p className="text-secondary-600 dark:text-secondary-300 mt-4">Loading messages...</p>
         </div>
       </div>
     );
@@ -34,7 +39,7 @@ export default function Messages() {
         <meta name="description" content="Chat with your skill exchange partners" />
       </Head>
       
-      <div className="h-screen flex flex-col overflow-hidden bg-gradient-to-br from-secondary-50 via-white to-primary-50">
+      <div className="h-screen flex flex-col overflow-hidden bg-gradient-to-br from-secondary-50 via-white to-primary-50 dark:from-secondary-900 dark:via-secondary-800 dark:to-secondary-700">
         {/* Header */}
         <div className="bg-white border-b border-secondary-200 px-4 py-4 sticky top-0 z-10 shadow-sm">
           <div className="flex items-center justify-center">

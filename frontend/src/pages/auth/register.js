@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { 
   UserIcon, 
@@ -12,9 +12,11 @@ import Card from '../../components/Card';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 import useUserStore from '../../store/useUserStore';
+import useToastStore from '../../store/useToastStore';
 
 export default function Register() {
   const { signup, loading, error } = useUserStore();
+  const { addToast } = useToastStore();
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
 
@@ -33,6 +35,12 @@ export default function Register() {
     window.location.href = (process.env.NEXT_PUBLIC_API_URL || '') + '/api/auth/google';
   };
 
+  useEffect(() => {
+    if (error) {
+      addToast({ message: error, type: 'error' });
+    }
+  }, [error]);
+
   return (
     <>
       <Head>
@@ -40,7 +48,7 @@ export default function Register() {
         <meta name="description" content="Join SkillSwap and start exchanging skills with professionals" />
       </Head>
       
-      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary-50 via-white to-accent-50">
+      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary-50 via-white to-accent-50 dark:from-secondary-900 dark:via-secondary-800 dark:to-secondary-700">
         <div className="w-full max-w-md space-y-8">
           {/* Header */}
           <div className="text-center space-y-3">

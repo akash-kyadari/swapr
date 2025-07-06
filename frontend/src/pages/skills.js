@@ -27,7 +27,9 @@ import Input from '@/components/Input';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
 import Avatar from '@/components/Avatar';
+import Loader from '@/components/Loader';
 import useUserStore from '@/store/useUserStore';
+import useToastStore from '@/store/useToastStore';
 import { apiFetch } from '@/utils/api';
 
 // Swap Modal Component
@@ -203,6 +205,7 @@ function SwapModal({ swap, user, onClose, handleAcceptSwap, acceptingId }) {
 // Main Skills Page Component
 export default function SkillsPage() {
   const { user } = useUserStore();
+  const { addToast } = useToastStore();
   const [openSwaps, setOpenSwaps] = useState([]);
   const [swapLoading, setSwapLoading] = useState(true);
   const [swapError, setSwapError] = useState('');
@@ -224,6 +227,7 @@ export default function SkillsPage() {
       } catch (err) {
         setSwapError('Failed to load open swaps. Please try again.');
         console.error('Error fetching swaps:', err);
+        addToast({ message: 'Failed to load skill exchanges', type: 'error' });
       } finally {
         setSwapLoading(false);
       }
@@ -245,11 +249,11 @@ export default function SkillsPage() {
       setOpenSwaps(prev => prev.filter(swap => swap._id !== modalSwap._id));
       setModalSwap(null);
       
-      // Show success message
-      alert('Swap accepted successfully! You can now chat with the user.');
+      // Show success toast
+      addToast({ message: 'Swap accepted! You can now chat with the user.', type: 'success' });
     } catch (err) {
       console.error('Error accepting swap:', err);
-      alert('Failed to accept swap. Please try again.');
+      addToast({ message: 'Failed to accept swap. Please try again.', type: 'error' });
     } finally {
       setAcceptingId(null);
     }
@@ -373,8 +377,8 @@ export default function SkillsPage() {
           {/* Loading State */}
           {swapLoading && (
             <div className="text-center py-12">
-              <ArrowPathIcon className="w-12 h-12 text-primary-600 animate-spin mx-auto mb-4" />
-              <p className="text-secondary-600 text-lg">Loading skill exchanges...</p>
+              <Loader />
+              <p className="text-secondary-600 dark:text-secondary-400 text-lg mt-4">Loading skill exchanges...</p>
             </div>
           )}
 

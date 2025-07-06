@@ -1,5 +1,5 @@
 export default function Card({ children, className = '', variant = 'default', hover = false, padding = 'default', fullWidth = false }) {
-  const base = 'bg-white/80 backdrop-blur-sm border border-secondary-200/60 rounded-3xl shadow-sm transition-all duration-300';
+  const base = 'bg-white/80 dark:bg-secondary-800/80 backdrop-blur-sm border border-secondary-200/60 dark:border-secondary-700/60 rounded-3xl shadow-sm transition-all duration-300';
   
   const variants = {
     default: 'bg-white/80 backdrop-blur-sm border border-secondary-200/60',

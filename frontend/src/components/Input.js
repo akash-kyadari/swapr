@@ -12,7 +12,7 @@ export default function Input({
   fullWidth = false,
   ...props 
 }) {
-  const base = 'block text-secondary-900 placeholder-secondary-500 bg-white/80 backdrop-blur-sm border rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-0 transition-all duration-200 input-focus shadow-sm';
+  const base = 'block text-secondary-900 dark:text-secondary-100 placeholder-secondary-500 dark:placeholder-secondary-400 bg-white/80 dark:bg-secondary-700/50 backdrop-blur-sm border rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-0 transition-all duration-200 input-focus shadow-sm';
   
   const sizes = {
     sm: 'px-4 py-2 text-sm',

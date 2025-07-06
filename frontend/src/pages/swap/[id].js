@@ -5,6 +5,8 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 import ChatContainer from '../../components/ChatContainer';
 import useUserStore from '../../store/useUserStore';
+import useToastStore from '../../store/useToastStore';
+import Loader from '../../components/Loader';
 import { apiFetch } from '../../utils/api';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/solid';
 
@@ -21,6 +23,7 @@ export default function SwapDetails() {
   const [review, setReview] = useState({ rating: 5, feedback: '' });
   const [reviewed, setReviewed] = useState(false);
   const messagesEndRef = useRef(null);
+  const { addToast } = useToastStore();
 
   useEffect(() => {
     if (!id) return;
@@ -34,6 +37,7 @@ export default function SwapDetails() {
         setMessages(msgs);
       } catch (err) {
         setError('Failed to load swap.');
+        addToast({ message: 'Failed to load swap', type: 'error' });
       } finally {
         setLoading(false);
       }
@@ -61,6 +65,7 @@ export default function SwapDetails() {
       setMessages(msgs);
     } catch (err) {
       setError('Failed to send message.');
+      addToast({ message: 'Failed to send message', type: 'error' });
     }
   };
 
@@ -75,6 +80,7 @@ export default function SwapDetails() {
       setSwap(swapData);
     } catch (err) {
       setError('Failed to mark as complete.');
+      addToast({ message: 'Failed to mark as complete', type: 'error' });
     } finally {
       setCompleting(false);
     }
@@ -95,10 +101,18 @@ export default function SwapDetails() {
       setReviewed(true);
     } catch (err) {
       setError('Failed to submit review.');
+      addToast({ message: 'Failed to submit review', type: 'error' });
     }
   };
 
-  if (loading) return <div className="text-center py-10 text-lg text-slate-500">Loading swap...</div>;
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50 dark:from-secondary-900 dark:via-secondary-800 dark:to-secondary-700">
+      <div className="text-center">
+        <Loader />
+        <p className="text-secondary-600 dark:text-secondary-300 mt-4">Loading swap...</p>
+      </div>
+    </div>
+  );
   if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
   if (!swap) return null;
 

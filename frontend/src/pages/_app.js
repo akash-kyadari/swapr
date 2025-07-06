@@ -1,8 +1,10 @@
 import '../styles/globals.css';
 import Layout from '../components/Layout';
 import useUserStore from '../store/useUserStore';
+import useThemeStore from '../store/useThemeStore';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
+import ToastContainer from '../components/ToastContainer';
 
 const protectedRoutes = ['/dashboard', '/profile/edit'];
 
@@ -13,6 +15,12 @@ export default function App({ Component, pageProps }) {
   // Only fetch user on initial mount, not on every route change
   useEffect(() => {
     fetchUser();
+    // Ensure theme class is set on initial load
+    const { theme } = useThemeStore.getState();
+    if (typeof document !== 'undefined') {
+      const html = document.documentElement;
+      html.classList.add(theme);
+    }
     // eslint-disable-next-line
   }, []);
 
@@ -29,6 +37,7 @@ export default function App({ Component, pageProps }) {
 
   return (
     <Layout>
+      <ToastContainer />
       <Component {...pageProps} />
     </Layout>
   );

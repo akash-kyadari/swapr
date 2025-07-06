@@ -4,10 +4,12 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import useUserStore from '../store/useUserStore';
+import useToastStore from '../store/useToastStore';
 import { apiFetch } from '../utils/api';
 import TagInput from '../components/TagInput';
 import ReactDOM from 'react-dom';
 import Avatar from '../components/Avatar';
+import Loader from '../components/Loader';
 
 import {
   UserCircleIcon,
@@ -192,6 +194,7 @@ function SwapModal({ swap, user, onClose }) {
 
 export default function Swap() {
   const { user, loading: userLoading } = useUserStore();
+  const { addToast } = useToastStore();
   const [swaps, setSwaps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -207,10 +210,10 @@ export default function Swap() {
   // Show loading while user state is being determined
   if (userLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50 dark:from-secondary-900 dark:via-secondary-800 dark:to-secondary-700">
         <div className="text-center">
-          <ArrowPathIcon className="w-12 h-12 text-primary-600 animate-spin mx-auto mb-4" />
-          <p className="text-secondary-600">Loading...</p>
+          <Loader />
+          <p className="text-secondary-600 dark:text-secondary-300 mt-4">Loading...</p>
         </div>
       </div>
     );
@@ -226,6 +229,7 @@ export default function Swap() {
         setSwaps(data);
       } catch (err) {
         setError('Failed to load your swaps.');
+        addToast({ message: 'Failed to load your swaps', type: 'error' });
         console.error('Error fetching swaps:', err);
       } finally {
         setLoading(false);
@@ -238,6 +242,7 @@ export default function Swap() {
     e.preventDefault();
     if (!offeredSkill.length || !requestedSkill.trim()) {
       setError('Please fill in all required fields.');
+      addToast({ message: 'Fill all required fields', type: 'warning' });
       return;
     }
 
@@ -263,12 +268,14 @@ export default function Swap() {
       setMessage('');
       setDifficultyLevel('Intermediate');
       setIsUrgent(false);
-      setSuccess('Skill exchange created successfully!');
+      setSuccess('Swap created successfully!');
+      addToast({ message: 'Swap created successfully!', type: 'success' });
       
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError('Failed to create skill exchange. Please try again.');
+      setError('Failed to create swap. Please try again.');
+      addToast({ message: 'Failed to create swap', type: 'error' });
       console.error('Error creating swap:', err);
     } finally {
       setSubmitting(false);
@@ -415,7 +422,7 @@ export default function Swap() {
               {/* Loading State */}
               {loading && (
                 <div className="text-center py-12">
-                  <ArrowPathIcon className="w-12 h-12 text-primary-600 animate-spin mx-auto mb-4" />
+                  <Loader />
                   <p className="text-secondary-600">Loading your exchanges...</p>
                 </div>
               )}

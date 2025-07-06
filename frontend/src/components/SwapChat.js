@@ -4,6 +4,8 @@ import Card from './Card';
 import ChatContainer from './ChatContainer';
 import Button from './Button';
 import useUserStore from '../store/useUserStore';
+import useToastStore from '../store/useToastStore';
+import Loader from './Loader';
 import { apiFetch } from '../utils/api';
 import { 
   ExclamationTriangleIcon, 
@@ -15,6 +17,7 @@ import {
 export default function SwapChat({ swapId, onBack }) {
   const router = useRouter();
   const { user } = useUserStore();
+  const { addToast } = useToastStore();
   const [swap, setSwap] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +41,7 @@ export default function SwapChat({ swapId, onBack }) {
       setMessages(messagesData);
     } catch (err) {
       setError('Failed to load swap and messages.');
+      addToast({ message: 'Failed to load chat', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -55,6 +59,7 @@ export default function SwapChat({ swapId, onBack }) {
       setMessages(prev => [...prev, newMessage]);
     } catch (err) {
       setError('Failed to send message.');
+      addToast({ message: 'Failed to send message', type: 'error' });
     } finally {
       setSending(false);
     }
@@ -70,6 +75,7 @@ export default function SwapChat({ swapId, onBack }) {
       setSwap(updatedSwap);
     } catch (err) {
       setError('Failed to mark as complete.');
+      addToast({ message: 'Failed to mark as complete', type: 'error' });
     }
   };
 
@@ -77,8 +83,8 @@ export default function SwapChat({ swapId, onBack }) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading chat...</p>
+          <Loader />
+          <p className="text-secondary-600 dark:text-secondary-300 mt-4">Loading chat...</p>
         </div>
       </div>
     );
@@ -87,8 +93,8 @@ export default function SwapChat({ swapId, onBack }) {
   if (error) {
     return (
       <div className="text-center py-8">
-        <p className="text-red-500 mb-4">{error}</p>
-        <Button onClick={fetchSwapAndMessages} variant="primary">
+        <p className="text-error-600 mb-4">{error}</p>
+        <Button onClick={fetchSwapAndMessages} variant="error">
           Try Again
         </Button>
       </div>

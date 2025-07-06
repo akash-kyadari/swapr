@@ -1,13 +1,16 @@
 import { useEffect, useState, useRef } from 'react';
 import useUserStore from '../../store/useUserStore';
+import useToastStore from '../../store/useToastStore';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Avatar from '../../components/Avatar';
+import Loader from '../../components/Loader';
 import { apiFetch } from '../../utils/api';
 
 export default function ProfilePage() {
   const { user, setUser } = useUserStore();
+  const { addToast } = useToastStore();
   const [form, setForm] = useState({
     name: '',
     bio: '',
@@ -78,18 +81,27 @@ export default function ProfilePage() {
       });
       setUser(updatedUser);
       setSuccess('Profile updated!');
+      addToast({ message: 'Profile updated!', type: 'success' });
       setEditMode(false);
     } catch (err) {
       setError(err.message);
+      addToast({ message: err.message || 'Failed to update profile', type: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
-  if (!user) return <div className="text-center py-12 text-lg text-primary">Loading profile...</div>;
+  if (!user) return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50 dark:from-secondary-900 dark:via-secondary-800 dark:to-secondary-700">
+      <div className="text-center">
+        <Loader />
+        <p className="text-secondary-600 dark:text-secondary-300 mt-4">Loading profile...</p>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center py-12 px-2 sm:px-6">
+    <div className="min-h-screen bg-background dark:bg-secondary-900 flex flex-col items-center py-12 px-2 sm:px-6">
       <h2 className="text-3xl font-bold text-primary mb-6 text-center">My Profile</h2>
       <Card className="w-full max-w-2xl shadow-card rounded-3xl p-6 sm:p-10 animate-fade-in">
         <div className="flex flex-col items-center gap-6 mb-6">
@@ -199,8 +211,8 @@ export default function ProfilePage() {
               <Button type="button" variant="secondary" onClick={() => setEditMode(false)} disabled={loading} fullWidth size="lg">Cancel</Button>
             </div>
             <div className="flex flex-col gap-2">
-              {success && <span className="text-success font-medium">{success}</span>}
-              {error && <span className="text-error font-medium">{error}</span>}
+              {success && <span className="text-success-600 font-medium">{success}</span>}
+              {error && <span className="text-error-600 font-medium">{error}</span>}
             </div>
           </form>
         )}

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import useUserStore from '../store/useUserStore';
+import useToastStore from '../store/useToastStore';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import Loader from '../components/Loader';
 import { apiFetch } from '../utils/api';
 import { XMarkIcon, UserCircleIcon, ArrowRightOnRectangleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
@@ -71,6 +73,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [modalSwap, setModalSwap] = useState(null);
+  const { addToast } = useToastStore();
 
   useEffect(() => {
     async function fetchUserSwaps() {
@@ -82,6 +85,7 @@ export default function Dashboard() {
         setAcceptedSwaps(data.acceptedSwaps || []);
       } catch (err) {
         setError('Failed to load your swaps.');
+        addToast({ message: 'Failed to load your swaps', type: 'error' });
       } finally {
         setLoading(false);
       }
@@ -133,12 +137,15 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center py-12 px-2 sm:px-6">
+    <div className="min-h-screen bg-background dark:bg-secondary-900 flex flex-col items-center py-12 px-2 sm:px-6">
       <h2 className="text-3xl font-bold text-primary mb-6">Dashboard</h2>
       {loading ? (
-        <div className="text-center text-lg text-slate-500">Loading your swaps...</div>
+        <div className="text-center py-12">
+          <Loader />
+          <p className="text-secondary-600 dark:text-secondary-400 mt-4">Loading your swaps...</p>
+        </div>
       ) : error ? (
-        <div className="text-center text-red-500">{error}</div>
+        <div className="text-center text-error-600">{error}</div>
       ) : (
         <>
           <Card className="max-w-3xl">

@@ -49,7 +49,7 @@ export default function TagInput({
     <div className="w-full relative">
       {label && <label className="block text-sm font-medium text-secondary-700 mb-2">{label}</label>}
       <div
-        className="flex flex-wrap items-center gap-2 px-4 py-3 rounded-xl border border-secondary-300/60 bg-white/80 backdrop-blur-sm focus-within:ring-2 focus-within:ring-primary-500/20 focus-within:border-primary-500 min-h-[48px] cursor-text transition-all duration-200 input-focus"
+        className="flex flex-wrap items-center gap-2 px-4 py-3 rounded-xl border border-secondary-300/60 dark:border-secondary-600 bg-white/80 dark:bg-secondary-700/50 backdrop-blur-sm focus-within:ring-2 focus-within:ring-primary-500/20 focus-within:border-primary-500 min-h-[48px] cursor-text transition-all duration-200 input-focus"
         onClick={() => inputRef.current?.focus()}
       >
         {tags.map((tag) => (
@@ -69,7 +69,7 @@ export default function TagInput({
         ))}
         <input
           ref={inputRef}
-          className="flex-1 min-w-[120px] border-none outline-none bg-transparent text-secondary-900 placeholder-secondary-500 py-1 px-2"
+          className="flex-1 min-w-[120px] border-none outline-none bg-transparent text-secondary-900 dark:text-secondary-100 placeholder-secondary-500 dark:placeholder-secondary-400 py-1 px-2"
           value={input}
           onChange={(e) => {
             setInput(e.target.value);
@@ -85,7 +85,7 @@ export default function TagInput({
       
       {/* Dropdown for predefined options */}
       {dropdown && options.length > 0 && filteredOptions.length > 0 && (
-        <div className="absolute z-20 mt-2 bg-white border border-secondary-200 rounded-xl shadow-xl w-full max-h-56 overflow-auto animate-fade-in">
+        <div className="absolute z-20 mt-2 bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-600 rounded-xl shadow-xl w-full max-h-56 overflow-auto animate-fade-in">
           {filteredOptions.map((opt) => (
             <div
               key={opt}
