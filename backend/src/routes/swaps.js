@@ -19,11 +19,11 @@ router.get('/marketplace', async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+// Get open and accepted swaps for the logged-in user (must be before /:id)
+router.get('/user-swaps', auth, swapController.getUserSwaps);
 // Update swap status (accept, reject, complete)
 router.put('/:id/status', auth, swapController.updateSwapStatus);
 // Get swap by ID
 router.get('/:id', auth, swapController.getSwapById);
-// Get open and accepted swaps for the logged-in user
-router.get('/user-swaps', auth, swapController.getUserSwaps);
 
 module.exports = router; 

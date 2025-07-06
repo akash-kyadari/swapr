@@ -1,187 +1,52 @@
-import { useState } from 'react';
-import Link from 'next/link';
+import Navigation from './Navigation';
 import { useRouter } from 'next/router';
-import {
-  HomeIcon,
-  UserGroupIcon,
-  BriefcaseIcon,
-  ChatBubbleLeftRightIcon,
-  Bars3Icon,
-  XMarkIcon,
-  UserCircleIcon,
-  ArrowRightOnRectangleIcon
-} from '@heroicons/react/24/outline';
 import useUserStore from '../store/useUserStore';
-import Avatar from './Avatar';
+import LoginPrompt from './LoginPrompt';
 
 export default function Layout({ children }) {
-  const { user, logout } = useUserStore();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
-
-  const navigation = [
-    { name: 'Home', href: '/', icon: HomeIcon },
-    { name: 'Skills', href: '/skills', icon: BriefcaseIcon },
-    { name: 'Swap', href: '/swap', icon: UserGroupIcon },
-    { name: 'Messages', href: '/messages', icon: ChatBubbleLeftRightIcon },
-  ];
+  const { user, loading: userLoading } = useUserStore();
+  const isMessagesPage = router.pathname === '/messages';
+  const isLoginPromptPage = !userLoading && !user && (router.pathname === '/swap' || router.pathname === '/messages');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                SkillSwap
-              </h1>
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:block">
-              <div className="ml-10 flex items-baseline space-x-8">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                      router.pathname === item.href
-                        ? 'text-blue-600 bg-blue-50' 
-                        : 'text-slate-700 hover:text-blue-600 hover:bg-blue-50'
-                    }`}
-                  >
-                    <item.icon className="w-5 h-5 mr-2" />
-                    {item.name}
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Desktop User Menu */}
-            <div className="hidden md:flex items-center space-x-4">
-              {user ? (
-                <>
-                  <Link
-                    href="/profile/edit"
-                    className="flex items-center space-x-3 group hover:bg-blue-50 rounded-lg px-2 py-1 transition-all duration-200"
-                  >
-                    <Avatar src={user.avatar} name={user.name} size={32} />
-                    <div className="text-sm">
-                      <p className="font-medium text-slate-900 group-hover:text-blue-600">{user.name}</p>
-                      <p className="text-slate-500">{user.email}</p>
-                    </div>
-                  </Link>
-                  <button
-                    onClick={logout}
-                    className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/auth/login"
-                    className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    href="/auth/register"
-                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-                  >
-                    Get Started
-                  </Link>
-                </>
-              )}
-            </div>
-
-            {/* Mobile: user buttons + menu icon */}
-            <div className="md:hidden flex items-center gap-2">
-              {user ? (
-                <>
-                  <button
-                    onClick={logout}
-                    className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-200"
-                    aria-label="Logout"
-                    title="Logout"
-                  >
-                    <ArrowRightOnRectangleIcon className="w-6 h-6" />
-                  </button>
-                  <Link href="/profile/edit" aria-label="Profile" title="Profile">
-                    <UserCircleIcon className="w-7 h-7 text-blue-600 hover:text-blue-800 transition" />
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/auth/login"
-                    className="px-3 py-1 text-sm font-medium text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    href="/auth/register"
-                    className="px-3 py-1 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg shadow-sm transition-all duration-200"
-                  >
-                    Get Started
-                  </Link>
-                </>
-              )}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
-                aria-label="Toggle menu"
-              >
-                {mobileMenuOpen ? (
-                  <XMarkIcon className="w-6 h-6" />
-                ) : (
-                  <Bars3Icon className="w-6 h-6" />
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Navigation Panel */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-t border-slate-200">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center px-3 py-2 text-base font-medium rounded-lg transition-all duration-200 ${
-                    router.pathname === item.href
-                      ? 'text-blue-600 bg-blue-50' 
-                      : 'text-slate-700 hover:text-blue-600 hover:bg-blue-50'
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <item.icon className="w-5 h-5 mr-3" />
-                  {item.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-      </nav>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col">
+      {/* Navigation - Fixed position */}
+      <div className="flex-shrink-0 sticky top-0 z-50">
+        <Navigation />
+      </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {children}
-      </main>
+      {isMessagesPage ? (
+        <main className="flex-1 overflow-hidden">
+          {children}
+        </main>
+      ) : isLoginPromptPage ? (
+        <main className="flex-1 flex items-center justify-center px-4 py-8">
+          <LoginPrompt 
+            title={router.pathname === '/swap' ? "Login to Access Swaps" : "Login to Access Messages"}
+            message={router.pathname === '/swap' 
+              ? "Join our community to start swapping skills with other members. Create skill exchanges and find the perfect match for your learning journey."
+              : "Connect with other members through our messaging system. Start conversations and coordinate your skill swaps."
+            }
+          />
+        </main>
+      ) : (
+        <main className="flex-1 max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          {children}
+        </main>
+      )}
 
       {/* Footer */}
-      <footer className="bg-white/80 backdrop-blur-md border-t border-slate-200/60 mt-16">
-        <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-          <div className="text-center text-sm text-slate-500">
-            <p>&copy; {new Date().getFullYear()} SkillSwap. Connect, learn, and grow together.</p>
+      {!isMessagesPage && !isLoginPromptPage && (
+        <footer className="flex-shrink-0 bg-white/80 backdrop-blur-md border-t border-slate-200/60 mt-16">
+          <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <div className="text-center text-sm text-slate-500">
+              <p>&copy; {new Date().getFullYear()} SkillSwap. Connect, learn, and grow together.</p>
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 }

@@ -4,8 +4,7 @@ import useUserStore from '../store/useUserStore';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 
-const protectedRoutes = ['/dashboard', '/profile/edit', '/swap'];
-const customLayoutRoutes = ['/messages'];
+const protectedRoutes = ['/dashboard', '/profile/edit'];
 
 export default function App({ Component, pageProps }) {
   const { user, loading, fetchUser } = useUserStore();
@@ -27,11 +26,6 @@ export default function App({ Component, pageProps }) {
   }, [user, loading, router.pathname]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-
-  // Use custom layout for messages page only
-  if (customLayoutRoutes.includes(router.pathname)) {
-    return <Component {...pageProps} />;
-  }
 
   return (
     <Layout>
