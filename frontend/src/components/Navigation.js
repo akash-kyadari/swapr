@@ -13,8 +13,6 @@ import {
 } from "@heroicons/react/24/outline";
 import useUserStore from "../store/useUserStore";
 import Avatar from "./Avatar";
-import ThemeToggle from "./ThemeToggle";
-
 export default function Navigation() {
   const { user, logout } = useUserStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -95,7 +93,6 @@ export default function Navigation() {
                 >
                   Get Started
                 </Link>
-                <ThemeToggle />
               </>
             )}
           </div>
@@ -115,7 +112,6 @@ export default function Navigation() {
                 <Link href="/profile/edit" aria-label="Profile" title="Profile">
                   <UserCircleIcon className="w-7 h-7 text-blue-600 hover:text-blue-800 transition" />
                 </Link>
-                <ThemeToggle />
               </>
             ) : (
               <>
@@ -131,7 +127,6 @@ export default function Navigation() {
                 >
                   Get Started
                 </Link>
-                <ThemeToggle />
               </>
             )}
             <button

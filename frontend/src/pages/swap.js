@@ -51,41 +51,61 @@ function SwapModal({ swap, user, onClose }) {
 
   return ReactDOM.createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-lg animate-fade-in"
       onClick={handleBackdropClick}
+      tabIndex={-1}
+      aria-modal="true"
+      role="dialog"
     >
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl border border-secondary-200 animate-scale-in">
+      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white/90 dark:bg-secondary-900/95 rounded-3xl shadow-2xl border border-secondary-200 dark:border-secondary-700 animate-scale-in backdrop-blur-xl">
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 p-6 text-white rounded-t-2xl">
+        <div className="bg-gradient-to-r from-primary-600 to-primary-700 p-8 text-white rounded-t-3xl flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Swap Details</h2>
+            <p className="text-primary-100 mt-1 text-sm">Review your skill exchange</p>
+          </div>
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
+            className="text-white/80 hover:text-white transition-colors rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-white"
+            aria-label="Close modal"
           >
-            <XMarkIcon className="w-6 h-6" />
+            <XMarkIcon className="w-7 h-7" />
           </button>
-          <h2 className="text-xl font-bold">Swap Details</h2>
-          <p className="text-primary-100 mt-1">Review your skill exchange</p>
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* Sender Info */}
-          <div className="flex items-center gap-4 p-4 bg-secondary-50 rounded-xl">
-            <Avatar src={swap.sender?.avatar} name={swap.sender?.name} size={40} />
-            <div className="flex-1">
-              <div className="font-bold text-xl text-secondary-900">
+        <div className="p-8 space-y-8">
+          {/* Sender & Receiver Info */}
+          <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-gradient-to-br from-secondary-50/80 to-primary-50/60 rounded-2xl shadow-inner">
+            <div className="flex flex-col items-center gap-2 flex-1">
+              <Avatar src={swap.sender?.avatar} name={swap.sender?.name} size={56} />
+              <div className="font-bold text-lg text-secondary-900 dark:text-white">
                 {isProposer ? 'You (Proposer)' : swap.sender?.name || 'Unknown'}
               </div>
               <div className="flex items-center gap-1 mt-1">
                 <StarIcon className="w-4 h-4 text-accent-500 fill-current" />
-                <span className="text-sm text-secondary-600">4.8 (12 reviews)</span>
+                <span className="text-xs text-secondary-600 dark:text-secondary-300">4.8 (12 reviews)</span>
               </div>
+              <span className="text-xs text-secondary-500 mt-1">Sender</span>
+            </div>
+            <div className="flex flex-col items-center gap-2 flex-1">
+              {swap.receiver ? (
+                <>
+                  <Avatar src={swap.receiver.avatar} name={swap.receiver.name} size={56} />
+                  <div className="font-bold text-lg text-success-800 dark:text-success-300">
+                    {isAcceptor ? 'You (Receiver)' : swap.receiver?.name || 'Unknown'}
+                  </div>
+                  <span className="text-xs text-success-700 mt-1">Receiver</span>
+                </>
+              ) : (
+                <div className="text-xs text-secondary-400 italic mt-8">No receiver yet</div>
+              )}
             </div>
           </div>
 
           {/* Skills Exchange */}
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <div className="text-sm font-semibold text-secondary-700 mb-3 flex items-center gap-2">
+              <div className="text-sm font-semibold text-secondary-700 mb-2 flex items-center gap-2">
                 <div className="w-3 h-3 bg-success-500 rounded-full"></div>
                 Offering Skills
               </div>
@@ -93,20 +113,19 @@ function SwapModal({ swap, user, onClose }) {
                 {(Array.isArray(swap.offeredSkill) ? swap.offeredSkill : [swap.offeredSkill]).map((skill) => (
                   <span
                     key={skill}
-                    className="bg-success-100 text-success-800 px-3 py-1.5 rounded-full text-sm font-medium border border-success-200"
+                    className="bg-success-100 text-success-800 px-3 py-1.5 rounded-full text-sm font-medium border border-success-200 shadow-sm"
                   >
                     {skill}
                   </span>
                 ))}
               </div>
             </div>
-
             <div>
-              <div className="text-sm font-semibold text-secondary-700 mb-3 flex items-center gap-2">
+              <div className="text-sm font-semibold text-secondary-700 mb-2 flex items-center gap-2">
                 <FireIcon className="w-4 h-4 text-warning-500" />
                 Looking for
               </div>
-              <div className="bg-primary-50 px-4 py-3 rounded-xl border border-primary-200">
+              <div className="bg-primary-50 px-4 py-3 rounded-xl border border-primary-200 shadow-sm">
                 <span className="text-primary-800 font-semibold text-lg">{swap.requestedSkill}</span>
               </div>
             </div>
@@ -116,7 +135,7 @@ function SwapModal({ swap, user, onClose }) {
           {swap.message && (
             <div>
               <div className="text-sm font-semibold text-secondary-700 mb-2">Message</div>
-              <div className="bg-secondary-50 p-4 rounded-xl border border-secondary-200">
+              <div className="bg-secondary-50 p-4 rounded-xl border border-secondary-200 shadow-sm">
                 <p className="text-secondary-700 italic">"{swap.message}"</p>
               </div>
             </div>
@@ -124,11 +143,11 @@ function SwapModal({ swap, user, onClose }) {
 
           {/* Details Grid */}
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="bg-secondary-50 p-3 rounded-lg">
+            <div className="bg-secondary-50 p-3 rounded-lg shadow-inner">
               <div className="text-secondary-600 text-xs uppercase font-medium">Status</div>
               <div className="font-semibold text-secondary-900 capitalize mt-1">{swap.status}</div>
             </div>
-            <div className="bg-secondary-50 p-3 rounded-lg">
+            <div className="bg-secondary-50 p-3 rounded-lg shadow-inner">
               <div className="text-secondary-600 text-xs uppercase font-medium">Difficulty</div>
               <div className={`px-2 py-1 rounded-full text-xs font-semibold mt-1 inline-block ${
                 swap.difficultyLevel === 'Beginner' ? 'bg-success-100 text-success-800' :
@@ -141,33 +160,21 @@ function SwapModal({ swap, user, onClose }) {
             </div>
           </div>
 
-          {/* Acceptance Info */}
-          {swap.receiver && (
-            <div className="flex items-center gap-3 p-3 bg-success-50 rounded-xl border border-success-200">
-              <Avatar src={swap.receiver.avatar} name={swap.receiver.name} size={40} />
-              <div>
-                <div className="text-sm font-medium text-success-800">
-                  Accepted by: {isAcceptor ? 'You' : swap.receiver?.name || 'Unknown'}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Timestamps */}
-          <div className="space-y-2 text-sm text-secondary-500">
+          <div className="flex flex-col md:flex-row gap-4 text-xs text-secondary-500">
             <div className="flex items-center gap-2">
               <CalendarIcon className="w-4 h-4" />
-              Created: {swap.createdAt ? new Date(swap.createdAt).toLocaleDateString() : 'N/A'}
+              Created: {swap.createdAt ? new Date(swap.createdAt).toLocaleString() : 'N/A'}
             </div>
             <div className="flex items-center gap-2">
               <ClockIcon className="w-4 h-4" />
-              Updated: {swap.updatedAt ? new Date(swap.updatedAt).toLocaleDateString() : 'N/A'}
+              Updated: {swap.updatedAt ? new Date(swap.updatedAt).toLocaleString() : 'N/A'}
             </div>
           </div>
 
           {/* Urgent Indicator */}
           {swap.isUrgent && (
-            <div className="flex items-center gap-3 p-3 bg-error-50 rounded-xl border border-error-200">
+            <div className="flex items-center gap-3 p-3 bg-error-50 rounded-xl border border-error-200 shadow-sm">
               <ExclamationTriangleIcon className="w-5 h-5 text-error-600" />
               <span className="font-semibold text-error-800">This is an urgent request</span>
             </div>
@@ -178,7 +185,7 @@ function SwapModal({ swap, user, onClose }) {
             <Button
               onClick={handleChat}
               variant="success"
-              className="w-full"
+              className="w-full mt-4 text-lg font-semibold shadow-lg"
               size="lg"
             >
               <ChatBubbleLeftRightIcon className="w-5 h-5 mr-2" />
@@ -226,7 +233,11 @@ export default function Swap() {
       setError('');
       try {
         const data = await apiFetch('/api/swaps/user-swaps');
-        setSwaps(data);
+        const allSwaps = [
+          ...(Array.isArray(data.openSwaps) ? data.openSwaps : []),
+          ...(Array.isArray(data.acceptedSwaps) ? data.acceptedSwaps : [])
+        ];
+        setSwaps(allSwaps);
       } catch (err) {
         setError('Failed to load your swaps.');
         addToast({ message: 'Failed to load your swaps', type: 'error' });
@@ -237,6 +248,9 @@ export default function Swap() {
     }
     fetchSwaps();
   }, []);
+
+  // Helper: check if user has offered skills
+  const hasOfferedSkills = user && Array.isArray(user.skillsOffered) && user.skillsOffered.length > 0;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -262,7 +276,7 @@ export default function Swap() {
         }),
       });
 
-      setSwaps(prev => [newSwap, ...prev]);
+      setSwaps(prev => [newSwap, ...(Array.isArray(prev) ? prev : [])]);
       setOfferedSkill([]);
       setRequestedSkill('');
       setMessage('');
@@ -322,88 +336,102 @@ export default function Swap() {
                   </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <TagInput
-                    label="Skills You're Offering"
-                    placeholder="Add skills you can teach (e.g., React, Design, Writing)"
-                    value={offeredSkill}
-                    onChange={setOfferedSkill}
-                    required
-                  />
-
-                  <Input
-                    label="Skill You're Looking For"
-                    placeholder="What skill do you want to learn?"
-                    value={requestedSkill}
-                    onChange={(e) => setRequestedSkill(e.target.value)}
-                    required
-                  />
-
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
-                      Message (Optional)
-                    </label>
-                    <textarea
-                      placeholder="Add a personal message about your exchange..."
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      rows={3}
-                      className="block w-full text-secondary-900 placeholder-secondary-500 bg-white/80 backdrop-blur-sm border border-secondary-300/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-200 input-focus resize-none"
-                    />
+                {/* If user has no offered skills, prompt to add them */}
+                {!hasOfferedSkills ? (
+                  <div className="text-center py-8">
+                    <p className="text-lg text-secondary-700 mb-4">You need to add skills you can offer before creating a swap.</p>
+                    <a
+                      href="/profile/edit"
+                      className="inline-block px-6 py-3 bg-primary-600 text-white rounded-xl font-semibold shadow hover:bg-primary-700 transition"
+                    >
+                      Go to Profile & Add Skills
+                    </a>
                   </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    <TagInput
+                      label="Skills You're Offering"
+                      placeholder="Add skills you can teach (e.g., React, Design, Writing)"
+                      value={offeredSkill}
+                      onChange={setOfferedSkill}
+                      options={user.skillsOffered}
+                      required
+                    />
 
-                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Skill You're Looking For"
+                      placeholder="What skill do you want to learn?"
+                      value={requestedSkill}
+                      onChange={(e) => setRequestedSkill(e.target.value)}
+                      required
+                    />
+
                     <div>
                       <label className="block text-sm font-medium text-secondary-700 mb-2">
-                        Difficulty Level
+                        Message (Optional)
                       </label>
-                      <select
-                        value={difficultyLevel}
-                        onChange={(e) => setDifficultyLevel(e.target.value)}
-                        className="block w-full text-secondary-900 bg-white/80 backdrop-blur-sm border border-secondary-300/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-200 input-focus px-4 py-3"
-                      >
-                        <option value="Beginner">Beginner</option>
-                        <option value="Intermediate">Intermediate</option>
-                        <option value="Advanced">Advanced</option>
-                        <option value="Expert">Expert</option>
-                      </select>
+                      <textarea
+                        placeholder="Add a personal message about your exchange..."
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        rows={3}
+                        className="block w-full text-secondary-900 placeholder-secondary-500 bg-white/80 backdrop-blur-sm border border-secondary-300/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-200 input-focus resize-none"
+                      />
                     </div>
 
-                    <div className="flex items-center">
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={isUrgent}
-                          onChange={(e) => setIsUrgent(e.target.checked)}
-                          className="w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
-                        />
-                        <span className="ml-2 text-sm text-secondary-700">Mark as urgent</span>
-                      </label>
-                    </div>
-                  </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-secondary-700 mb-2">
+                          Difficulty Level
+                        </label>
+                        <select
+                          value={difficultyLevel}
+                          onChange={(e) => setDifficultyLevel(e.target.value)}
+                          className="block w-full text-secondary-900 bg-white/80 backdrop-blur-sm border border-secondary-300/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-200 input-focus px-4 py-3"
+                        >
+                          <option value="Beginner">Beginner</option>
+                          <option value="Intermediate">Intermediate</option>
+                          <option value="Advanced">Advanced</option>
+                          <option value="Expert">Expert</option>
+                        </select>
+                      </div>
 
-                  {error && (
-                    <div className="text-sm text-error-600 bg-error-50 border border-error-200 rounded-lg p-3 animate-slide-up">
                       <div className="flex items-center">
-                        <div className="w-2 h-2 bg-error-500 rounded-full mr-2"></div>
-                        {error}
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={isUrgent}
+                            onChange={(e) => setIsUrgent(e.target.checked)}
+                            className="w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
+                          />
+                          <span className="ml-2 text-sm text-secondary-700">Mark as urgent</span>
+                        </label>
                       </div>
                     </div>
-                  )}
 
-                  {success && (
-                    <div className="text-sm text-success-600 bg-success-50 border border-success-200 rounded-lg p-3 animate-slide-up">
-                      <div className="flex items-center">
-                        <CheckCircleIcon className="w-4 h-4 mr-2" />
-                        {success}
+                    {error && (
+                      <div className="text-sm text-error-600 bg-error-50 border border-error-200 rounded-lg p-3 animate-slide-up">
+                        <div className="flex items-center">
+                          <div className="w-2 h-2 bg-error-500 rounded-full mr-2"></div>
+                          {error}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  <Button type="submit" loading={submitting} className="w-full" size="lg">
-                    {submitting ? 'Creating Exchange...' : 'Create Skill Exchange'}
-                  </Button>
-                </form>
+                    {success && (
+                      <div className="text-sm text-success-600 bg-success-50 border border-success-200 rounded-lg p-3 animate-slide-up">
+                        <div className="flex items-center">
+                          <CheckCircleIcon className="w-4 h-4 mr-2" />
+                          {success}
+                        </div>
+                      </div>
+                    )}
+
+                    <Button type="submit" loading={submitting} className="w-full" size="lg">
+                      {submitting ? 'Creating Exchange...' : 'Create Skill Exchange'}
+                    </Button>
+                  </form>
+                )}
               </Card>
             </div>
 

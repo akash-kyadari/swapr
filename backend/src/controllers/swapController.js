@@ -7,6 +7,14 @@ exports.proposeSwap = async (req, res) => {
     if (!offeredSkill || !requestedSkill) {
       return res.status(400).json({ message: 'offeredSkill and requestedSkill are required' });
     }
+    // Validate offeredSkill matches user's skillsOffered
+    const user = await User.findById(req.user.id);
+    const userSkills = Array.isArray(user.skillsOffered) ? user.skillsOffered : [];
+    const offeredSkillsArray = Array.isArray(offeredSkill) ? offeredSkill : [offeredSkill];
+    const invalidSkills = offeredSkillsArray.filter(skill => !userSkills.includes(skill));
+    if (invalidSkills.length > 0) {
+      return res.status(400).json({ message: `You can only offer your own skills. Invalid: ${invalidSkills.join(', ')}` });
+    }
     const swap = await Swap.create({
       sender: req.user.id,
       offeredSkill,
