@@ -127,10 +127,15 @@ export default function ProfilePage() {
             <div>
               <span className="font-semibold text-secondary-700">Skills Offered:</span> {(user.skillsOffered && user.skillsOffered.length) ? user.skillsOffered.join(', ') : <span className="text-textgray">(none)</span>}
             </div>
-            <div>
-              <span className="font-semibold text-secondary-700">Skills Needed:</span> {(user.skillsNeeded && user.skillsNeeded.length) ? user.skillsNeeded.join(', ') : <span className="text-textgray">(none)</span>}
-            </div>
-            <Button variant="primary" fullWidth size="lg" onClick={() => setEditMode(true)} className="mt-4">Edit Profile</Button>
+            
+            <button
+  type="button"
+  onClick={() => setEditMode(true)}
+  className="mt-4 w-full text-lg px-6 py-3 rounded-2xl font-semibold shadow-md bg-blue-600 hover:bg-blue-700 text-white transition"
+>
+  Edit Profile
+</button>
+
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6 mt-4">
@@ -197,19 +202,28 @@ export default function ProfilePage() {
                 />
               </div>
             </div>
-            <Input
-              label="Skills You Need (comma separated)"
-              name="skillsNeeded"
-              value={form.skillsNeeded}
-              onChange={handleChange}
-              placeholder="e.g. Web Development, Copywriting"
-              fullWidth
-              size="lg"
-            />
+            
             <div className="flex flex-col sm:flex-row gap-4 items-center">
-              <Button type="submit" variant="primary" loading={loading} disabled={loading} fullWidth size="lg">Save Changes</Button>
-              <Button type="button" variant="secondary" onClick={() => setEditMode(false)} disabled={loading} fullWidth size="lg">Cancel</Button>
-            </div>
+  <button
+    type="submit"
+    disabled={loading}
+    className={`w-full sm:w-auto text-lg px-6 py-3 rounded-2xl font-semibold shadow-md transition 
+      ${loading ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+  >
+    {loading ? 'Saving...' : 'Save Changes'}
+  </button>
+
+  <button
+    type="button"
+    disabled={loading}
+    onClick={() => setEditMode(false)}
+    className={`w-full sm:w-auto text-lg px-6 py-3 rounded-2xl font-semibold shadow-md transition 
+      ${loading ? 'bg-gray-300 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
+  >
+    Cancel
+  </button>
+</div>
+
             <div className="flex flex-col gap-2">
               {success && <span className="text-success-600 font-medium">{success}</span>}
               {error && <span className="text-error-600 font-medium">{error}</span>}

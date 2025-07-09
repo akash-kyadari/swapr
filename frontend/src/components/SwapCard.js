@@ -74,9 +74,26 @@ export default function SwapCard({ swap, onClick }) {
           </div>
         </div>
       </div>
-      {/* Message */}
-      <div className="mb-2 px-6 text-slate-700 text-sm italic line-clamp-2">
-        {swap.message ? `"${swap.message}"` : "No message provided"}
+      {/* Messages */}
+      <div className="mb-2 px-6 space-y-2">
+        {/* Proposer Message */}
+        {swap.message && (
+          <div className="text-slate-700 text-sm italic line-clamp-2">
+            <span className="font-medium text-slate-600">Proposer:</span> "{swap.message}"
+          </div>
+        )}
+        {/* Acceptor Message */}
+        {swap.acceptorMessage && (
+          <div className="text-green-700 text-sm italic line-clamp-2">
+            <span className="font-medium text-green-600">Acceptor:</span> "{swap.acceptorMessage}"
+          </div>
+        )}
+        {/* No messages */}
+        {!swap.message && !swap.acceptorMessage && (
+          <div className="text-slate-500 text-sm italic">
+            No messages provided
+          </div>
+        )}
       </div>
       {/* Meta Info */}
       <div className="flex items-center justify-between text-xs text-slate-500 mb-2 px-6">

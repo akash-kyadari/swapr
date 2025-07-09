@@ -11,6 +11,7 @@ const SwapSchema = new mongoose.Schema({
     default: 'pending' 
   },
   message: { type: String },
+  acceptorMessage: { type: String }, // Message from acceptor about their requested part
   chatRoomId: { type: String },
   difficultyLevel: { type: String, enum: ['Beginner', 'Intermediate', 'Advanced', 'Expert'], default: 'Intermediate' },
   isUrgent: { type: Boolean, default: false },

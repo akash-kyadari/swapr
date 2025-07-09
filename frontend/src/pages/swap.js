@@ -15,7 +15,6 @@ import {
   CalendarIcon,
   StarIcon,
   ExclamationTriangleIcon,
-  ChatBubbleLeftRightIcon,
   CheckCircleIcon,
   SparklesIcon,
   FireIcon,
@@ -441,18 +440,7 @@ function SwapModal({ swap, user, onClose }) {
             </div>
           )}
 
-          {/* Chat Button */}
-          {isAccepted && (
-            <Button
-              onClick={handleChat}
-              variant="success"
-              className="w-full mt-4 text-lg font-semibold shadow-lg"
-              size="lg"
-            >
-              <ChatBubbleLeftRightIcon className="w-5 h-5 mr-2" />
-              Open Chat
-            </Button>
-          )}
+
         </div>
       </div>
     </div>,
@@ -496,7 +484,7 @@ export function AcceptedSwapCard({ swap }) {
               {user.name}
             </p>
             <p className="text-xs text-gray-500">
-              {i === 0 ? "Proposer" : "Receiver"}
+              {i === 0 ? "Proposer" : "Acceptor"}
             </p>
           </div>
         ))}
@@ -535,14 +523,21 @@ export function AcceptedSwapCard({ swap }) {
         </div>
       </div>
 
-      {/* Message Section - Always occupies same space */}
-      <div className="min-h-[64px] relative bg-gray-50 rounded-lg p-3 border border-gray-100">
-        {swap.message ? (
-          <p className="text-sm text-gray-700 italic line-clamp-3">
-            “{swap.message}”
-          </p>
-        ) : (
-          <p className="text-sm text-gray-400 italic">No message provided.</p>
+      {/* Messages */}
+      <div className="space-y-3">
+        {/* Proposer Message */}
+        {swap.message && (
+          <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+            <p className="text-xs text-gray-500 mb-1 font-medium">Proposer's Message:</p>
+            <p className="text-sm text-gray-700 italic">"{swap.message}"</p>
+          </div>
+        )}
+        {/* Acceptor Message */}
+        {swap.acceptorMessage && (
+          <div className="bg-green-50 rounded-lg p-3 border border-green-100">
+            <p className="text-xs text-green-600 mb-1 font-medium">Acceptor's Request:</p>
+            <p className="text-sm text-green-700 italic">"{swap.acceptorMessage}"</p>
+          </div>
         )}
       </div>
 
@@ -572,17 +567,27 @@ export function AcceptedSwapCard({ swap }) {
       <div className="grid grid-cols-2 gap-4 text-xs text-gray-600">
         <div className="flex items-center gap-2">
           <CalendarIcon className="w-4 h-4 text-gray-400" />
-          Sender Deadline:{" "}
-          {swap.proposerDeadline
-            ? new Date(swap.proposerDeadline).toLocaleDateString()
-            : "N/A"}
+          <div>
+            <div className="font-medium">Proposer's Deadline:</div>
+            <div className="text-xs text-gray-500">Complete proposer's requested skill by:</div>
+            <div className="font-semibold">
+              {swap.proposerDeadline
+                ? new Date(swap.proposerDeadline).toLocaleDateString()
+                : "Not set"}
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <CalendarIcon className="w-4 h-4 text-gray-400" />
-          Receiver Deadline:{" "}
-          {swap.acceptorDeadline
-            ? new Date(swap.acceptorDeadline).toLocaleDateString()
-            : "N/A"}
+          <div>
+            <div className="font-medium">Acceptor's Deadline:</div>
+            <div className="text-xs text-gray-500">Complete acceptor's requested skill by:</div>
+            <div className="font-semibold">
+              {swap.acceptorDeadline
+                ? new Date(swap.acceptorDeadline).toLocaleDateString()
+                : "Not set"}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -594,7 +599,7 @@ export function AcceptedSwapCard({ swap }) {
         </div>
         <div className="flex items-center gap-1">
           <ClockIcon className="w-4 h-4" />
-          Updated: {new Date(swap.updatedAt).toLocaleString()}
+          Accepted: {swap.receiver ? new Date(swap.updatedAt).toLocaleString() : "Not accepted yet"}
         </div>
       </div>
     </div>
@@ -671,48 +676,67 @@ export default function Swap() {
             + Propose Swap
           </button>
         </div>
-        {/* Active Swaps First */}
-        {activeSwaps.length > 0 && (
-          <>
-            <div className="flex items-center justify-between px-8 py-3 border-t border-slate-200 bg-transparent">
-              <h2 className="text-xl font-bold text-slate-900">
-                Your Active Swaps ({activeSwaps.length})
-              </h2>
+        {/* Active Swaps Section */}
+        <div className="flex items-center justify-between px-8 py-3 border-t border-slate-200 bg-transparent">
+          <h2 className="text-xl font-bold text-slate-900">
+            Your Active Swaps ({activeSwaps.length})
+          </h2>
+        </div>
+        <div className="relative w-full">
+          {activeSwaps.length > 0 ? (
+            <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8 w-full px-8 pb-12">
+              {activeSwaps.map((swap) => (
+                <AcceptedSwapCard
+                  key={swap._id}
+                  swap={swap}
+                  onClick={() => router.push(`/swap/${swap._id}`)}
+                />
+              ))}
             </div>
-            <div className="relative w-full">
-              <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8 w-full px-8 pb-12">
-                {activeSwaps.map((swap) => (
-                  <AcceptedSwapCard
-                    key={swap._id}
-                    swap={swap}
-                    onClick={() => router.push(`/swap/${swap._id}`)}
-                  />
-                ))}
+          ) : (
+            <div className="px-8 py-12">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                  <CheckCircleIcon className="w-8 h-8 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-700 mb-2">No Active Swaps</h3>
+                <p className="text-slate-500 mb-4">You don't have any active skill swaps at the moment.</p>
+                <p className="text-sm text-slate-400">Create a new swap or wait for pending swaps to be accepted or accept the skill exchange from the swap listed in skills page.</p>
               </div>
             </div>
-          </>
-        )}
-        {/* Pending Swaps Second */}
-        {pendingSwaps.length > 0 && (
-          <>
-            <div className="flex items-center justify-between px-8 py-3 border-t border-slate-200 bg-transparent">
-              <h2 className="text-xl font-bold text-slate-900">
-                Pending Swaps ({pendingSwaps.length})
-              </h2>
+          )}
+        </div>
+
+        {/* Pending Swaps Section */}
+        <div className="flex items-center justify-between px-8 py-3 border-t border-slate-200 bg-transparent">
+          <h2 className="text-xl font-bold text-slate-900">
+            Pending Swaps ({pendingSwaps.length})
+          </h2>
+        </div>
+        <div className="relative w-full">
+          {pendingSwaps.length > 0 ? (
+            <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8 w-full px-8 pb-12">
+              {pendingSwaps.map((swap) => (
+                <SwapCard
+                  key={swap._id}
+                  swap={swap}
+                  onClick={() => setPendingModalSwap(swap)}
+                />
+              ))}
             </div>
-            <div className="relative w-full">
-              <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8 w-full px-8 pb-12">
-                {pendingSwaps.map((swap) => (
-                  <SwapCard
-                    key={swap._id}
-                    swap={swap}
-                    onClick={() => setPendingModalSwap(swap)}
-                  />
-                ))}
+          ) : (
+            <div className="px-8 py-12">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mb-4">
+                  <ClockIcon className="w-8 h-8 text-yellow-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-700 mb-2">No Pending Swaps</h3>
+                <p className="text-slate-500 mb-4">You don't have any pending skill swap requests.</p>
+                <p className="text-sm text-slate-400">Create a new swap to start exchanging skills with others.</p>
               </div>
             </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
       {/* Modals */}
       {showCreateModal && (

@@ -80,8 +80,26 @@ export default function PendingSwapModal({ swap, onClose }) {
               </span>
             </div>
           </div>
-          <div className="text-slate-700 text-sm italic">
-            {swap.message ? `"${swap.message}"` : "No message provided"}
+          {/* Messages */}
+          <div className="space-y-2">
+            {/* Proposer Message */}
+            {swap.message && (
+              <div className="text-slate-700 text-sm italic">
+                <span className="font-medium text-slate-600">Proposer:</span> "{swap.message}"
+              </div>
+            )}
+            {/* Acceptor Message */}
+            {swap.acceptorMessage && (
+              <div className="text-green-700 text-sm italic">
+                <span className="font-medium text-green-600">Acceptor:</span> "{swap.acceptorMessage}"
+              </div>
+            )}
+            {/* No messages */}
+            {!swap.message && !swap.acceptorMessage && (
+              <div className="text-slate-500 text-sm italic">
+                No messages provided
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-1 text-xs text-slate-500">
             <CalendarIcon className="w-4 h-4" />

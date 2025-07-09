@@ -65,7 +65,7 @@ exports.getSwaps = async (req, res) => {
 
 exports.updateSwapStatus = async (req, res) => {
   try {
-    const { status, deadline, approval } = req.body;
+    const { status, deadline, approval, acceptorMessage } = req.body;
     const swap = await Swap.findById(req.params.id);
     if (!swap) return res.status(404).json({ message: 'Swap not found' });
     
@@ -80,9 +80,13 @@ exports.updateSwapStatus = async (req, res) => {
       if (!deadline) {
         return res.status(400).json({ message: 'Deadline is required when accepting a swap' });
       }
+      if (!acceptorMessage || !acceptorMessage.trim()) {
+        return res.status(400).json({ message: 'Please provide a description of what you need' });
+      }
       
       swap.receiver = req.user.id;
       swap.acceptorDeadline = new Date(deadline); // When the acceptor wants their requested part completed
+      swap.acceptorMessage = acceptorMessage.trim(); // Message from acceptor about their requested part
       swap.status = 'in_progress';
       await swap.save();
       return res.json(swap);
