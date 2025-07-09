@@ -8,6 +8,7 @@ export default function Layout({ children }) {
   const { user, loading: userLoading } = useUserStore();
   const isMessagesPage = router.pathname === "/messages";
   const isSkillsPage = router.pathname === "/skills";
+  const isSwapPage = router.pathname === "/swap";
   const isLoginPromptPage =
     !userLoading &&
     !user &&
@@ -38,8 +39,8 @@ export default function Layout({ children }) {
             }
           />
         </main>
-      ) : isSkillsPage ? (
-        // Remove all side/top/bottom padding for /skills page, let the skills component handle its own spacing
+      ) : isSkillsPage || isSwapPage ? (
+        // Remove all side/top/bottom padding for /skills and /swap page, let the page handle its own spacing
         <main className="flex-1 w-full max-w-none m-0 p-0">{children}</main>
       ) : (
         <main className="flex-1 max-w-[98vw] mx-auto py-8 px-4 sm:px-6 lg:px-8">

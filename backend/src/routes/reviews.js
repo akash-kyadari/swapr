@@ -6,6 +6,8 @@ const router = express.Router();
 // Post a review
 router.post('/', auth, reviewController.createReview);
 // Get reviews for a user
-router.get('/:userId', reviewController.getReviewsByUser);
+router.get('/user/:userId', reviewController.getReviewsByUser);
+// Get reviews for a specific swap
+router.get('/swap/:swapId', auth, reviewController.getReviewsBySwap);
 
 module.exports = router; 

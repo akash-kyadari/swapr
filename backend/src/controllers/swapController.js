@@ -3,10 +3,18 @@ const User = require('../models/User');
 
 exports.proposeSwap = async (req, res) => {
   try {
-    const { offeredSkill, requestedSkill, message, difficultyLevel, isUrgent } = req.body;
-    if (!offeredSkill || !requestedSkill) {
-      return res.status(400).json({ message: 'offeredSkill and requestedSkill are required' });
+    const { offeredSkill, requestedSkill, message, difficultyLevel, isUrgent, proposerDeadline } = req.body;
+    if (!offeredSkill || !requestedSkill || !proposerDeadline) {
+      return res.status(400).json({ message: 'offeredSkill, requestedSkill, and proposerDeadline are required' });
     }
+    
+    // Validate deadline is in the future
+    const deadline = new Date(proposerDeadline);
+    const now = new Date();
+    if (deadline <= now) {
+      return res.status(400).json({ message: 'Deadline must be in the future' });
+    }
+    
     // Validate offeredSkill matches user's skillsOffered
     const user = await User.findById(req.user.id);
     const userSkills = Array.isArray(user.skillsOffered) ? user.skillsOffered : [];
@@ -15,6 +23,7 @@ exports.proposeSwap = async (req, res) => {
     if (invalidSkills.length > 0) {
       return res.status(400).json({ message: `You can only offer your own skills. Invalid: ${invalidSkills.join(', ')}` });
     }
+    
     const swap = await Swap.create({
       sender: req.user.id,
       offeredSkill,
@@ -22,6 +31,7 @@ exports.proposeSwap = async (req, res) => {
       message,
       difficultyLevel: difficultyLevel || 'Intermediate',
       isUrgent: isUrgent || false,
+      proposerDeadline: deadline, // When the proposer wants their requested part completed
       status: 'pending',
     });
     res.status(201).json(swap);
@@ -55,29 +65,117 @@ exports.getSwaps = async (req, res) => {
 
 exports.updateSwapStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, deadline, approval } = req.body;
     const swap = await Swap.findById(req.params.id);
     if (!swap) return res.status(404).json({ message: 'Swap not found' });
-    // Only receiver can accept/reject, both can mark as completed
+    
+    // Handle acceptance with deadline
     if (status === 'accepted') {
       if (swap.status !== 'pending' || swap.receiver) {
         return res.status(400).json({ message: 'Swap already accepted or not open' });
       }
-      // Set receiver to current user
       if (String(swap.sender) === req.user.id) {
         return res.status(403).json({ message: 'Cannot accept your own swap' });
       }
+      if (!deadline) {
+        return res.status(400).json({ message: 'Deadline is required when accepting a swap' });
+      }
+      
       swap.receiver = req.user.id;
-      swap.status = 'accepted';
+      swap.acceptorDeadline = new Date(deadline); // When the acceptor wants their requested part completed
+      swap.status = 'in_progress';
       await swap.save();
       return res.json(swap);
     }
+    
+    // Handle task completion
+    if (status === 'task_completed') {
+      const isSender = String(swap.sender) === req.user.id;
+      const isReceiver = String(swap.receiver) === req.user.id;
+      
+      if (!isSender && !isReceiver) {
+        return res.status(403).json({ message: 'Not authorized' });
+      }
+      
+      const userRole = isSender ? 'sender' : 'receiver';
+      const otherRole = isSender ? 'receiver' : 'sender';
+      
+      // Mark task as completed
+      swap[`${userRole}TaskCompleted`] = true;
+      swap[`${userRole}CompletedAt`] = new Date();
+      
+      // Update status based on completion state
+      if (swap[`${otherRole}TaskCompleted`]) {
+        // Both tasks completed, wait for approvals
+        swap.status = 'sender_completed';
+      } else {
+        // First task completed
+        swap.status = userRole === 'sender' ? 'sender_completed' : 'receiver_completed';
+      }
+      
+      await swap.save();
+      return res.json(swap);
+    }
+    
+    // Handle task approval
+    if (approval === 'approve') {
+      const isSender = String(swap.sender) === req.user.id;
+      const isReceiver = String(swap.receiver) === req.user.id;
+      
+      if (!isSender && !isReceiver) {
+        return res.status(403).json({ message: 'Not authorized' });
+      }
+      
+      const userRole = isSender ? 'sender' : 'receiver';
+      const otherRole = isSender ? 'receiver' : 'sender';
+      
+      // Check if other user's task is completed
+      if (!swap[`${otherRole}TaskCompleted`]) {
+        return res.status(400).json({ message: 'Cannot approve before other user completes their task' });
+      }
+      
+      // Mark as approved
+      swap[`${userRole}Approved`] = true;
+      swap[`${userRole}ApprovedAt`] = new Date();
+      
+      // Check if both approved
+      if (swap[`${otherRole}Approved`]) {
+        swap.status = 'completed';
+        swap.completedAt = new Date();
+      }
+      
+      await swap.save();
+      return res.json(swap);
+    }
+    
+    // Handle rejection
     if (["rejected"].includes(status) && String(swap.receiver) !== req.user.id) {
       return res.status(403).json({ message: 'Not authorized' });
     }
+    
+    // Handle reporting incomplete
+    if (status === 'incomplete') {
+      const isSender = String(swap.sender) === req.user.id;
+      const isReceiver = String(swap.receiver) === req.user.id;
+      
+      if (!isSender && !isReceiver) {
+        return res.status(403).json({ message: 'Not authorized' });
+      }
+      
+      swap.status = 'incomplete';
+      swap.reportedBy = req.user.id;
+      swap.reportedAt = new Date();
+      swap.incompleteReason = req.body.reason || 'No reason provided';
+      
+      await swap.save();
+      return res.json(swap);
+    }
+    
+    // Legacy status updates (for backward compatibility)
     if (status === 'completed' && ![swap.sender.toString(), swap.receiver?.toString()].includes(req.user.id)) {
       return res.status(403).json({ message: 'Not authorized' });
     }
+    
     swap.status = status;
     await swap.save();
     res.json(swap);
@@ -105,12 +203,23 @@ exports.getUserSwaps = async (req, res) => {
     const openSwaps = await Swap.find({ sender: userId, status: 'pending', receiver: null })
       .populate('sender', 'name avatar')
       .sort('-createdAt');
-    // Accepted swaps where user is sender or receiver
-    const acceptedSwaps = await Swap.find({ status: 'accepted', $or: [ { sender: userId }, { receiver: userId } ] })
+    // Active swaps where user is sender or receiver
+    const activeSwaps = await Swap.find({ 
+      status: { $in: ['in_progress', 'sender_completed', 'receiver_completed'] }, 
+      $or: [ { sender: userId }, { receiver: userId } ] 
+    })
       .populate('sender', 'name avatar')
       .populate('receiver', 'name avatar')
       .sort('-updatedAt');
-    res.json({ openSwaps, acceptedSwaps });
+    // Completed swaps
+    const completedSwaps = await Swap.find({ 
+      status: 'completed', 
+      $or: [ { sender: userId }, { receiver: userId } ] 
+    })
+      .populate('sender', 'name avatar')
+      .populate('receiver', 'name avatar')
+      .sort('-completedAt');
+    res.json({ openSwaps, activeSwaps, completedSwaps });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

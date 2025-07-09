@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { XMarkIcon, StarIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+import Avatar from './Avatar';
 import { apiFetch } from '../utils/api';
 
 export default function ReviewModal({ swap, otherUser, onClose, onReviewSubmitted }) {
@@ -8,11 +9,36 @@ export default function ReviewModal({ swap, otherUser, onClose, onReviewSubmitte
   const [feedback, setFeedback] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [existingReview, setExistingReview] = useState(null);
+
+  useEffect(() => {
+    // Check if user has already reviewed this swap
+    const checkExistingReview = async () => {
+      try {
+        const reviews = await apiFetch(`/api/reviews/swap/${swap._id}`);
+        const userReview = reviews.find(review => review.reviewer._id === swap.sender._id || review.reviewer._id === swap.receiver._id);
+        if (userReview) {
+          setExistingReview(userReview);
+        }
+      } catch (err) {
+        console.error('Error checking existing review:', err);
+      }
+    };
+
+    if (swap.status === 'completed') {
+      checkExistingReview();
+    }
+  }, [swap._id, swap.status]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!feedback.trim()) {
       setError('Please provide feedback');
+      return;
+    }
+
+    if (swap.status !== 'completed') {
+      setError('Can only review completed swaps');
       return;
     }
 
@@ -32,11 +58,119 @@ export default function ReviewModal({ swap, otherUser, onClose, onReviewSubmitte
       
       onReviewSubmitted();
     } catch (err) {
-      setError('Failed to submit review. Please try again.');
+      setError(err.message || 'Failed to submit review. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
+
+  // If swap is not completed, show message
+  if (swap.status !== 'completed') {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg max-w-md w-full p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Review Not Available</h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div className="text-center py-8">
+            <div className="text-gray-500 mb-4">
+              Reviews are only available after both parties have completed and approved their tasks.
+            </div>
+            <div className="text-sm text-gray-400">
+              Current status: <span className="font-medium capitalize">{swap.status.replace('_', ' ')}</span>
+            </div>
+          </div>
+          
+          <div className="flex justify-end">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If user has already reviewed, show their review
+  if (existingReview) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg max-w-md w-full p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Your Review</h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* User Info */}
+          <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
+            <Avatar
+              src={otherUser?.avatar}
+              name={otherUser?.name}
+              size={40}
+            />
+            <div>
+              <p className="font-medium text-gray-900">{otherUser?.name || 'Anonymous User'}</p>
+              <p className="text-sm text-gray-600">Swap completed successfully</p>
+            </div>
+          </div>
+
+          {/* Existing Review */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Your Rating
+              </label>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <StarIconSolid 
+                    key={star} 
+                    className={`w-8 h-8 ${existingReview.rating >= star ? 'text-yellow-400' : 'text-gray-300'}`} 
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Your Feedback
+              </label>
+              <div className="bg-gray-50 rounded-lg p-3 text-gray-700">
+                {existingReview.feedback || 'No feedback provided'}
+              </div>
+            </div>
+
+            <div className="text-xs text-gray-500">
+              Reviewed on {new Date(existingReview.createdAt).toLocaleDateString()}
+            </div>
+          </div>
+
+          <div className="flex justify-end mt-6">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -54,10 +188,10 @@ export default function ReviewModal({ swap, otherUser, onClose, onReviewSubmitte
 
         {/* User Info */}
         <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
-          <img
-            src={otherUser?.avatar || '/avatar.png'}
-            alt={otherUser?.name || 'User'}
-            className="w-10 h-10 rounded-full object-cover"
+          <Avatar
+            src={otherUser?.avatar}
+            name={otherUser?.name}
+            size={40}
           />
           <div>
             <p className="font-medium text-gray-900">{otherUser?.name || 'Anonymous User'}</p>

@@ -24,6 +24,9 @@ import { apiFetch } from "@/utils/api";
 
 // --- Enhanced Modal (minimal, compact, professional, minimal color) ---
 function SwapModal({ swap, user, onClose, handleAcceptSwap, acceptingId }) {
+  const [deadline, setDeadline] = useState("");
+  const [error, setError] = useState("");
+
   if (!swap) return null;
 
   useEffect(() => {
@@ -42,106 +45,119 @@ function SwapModal({ swap, user, onClose, handleAcceptSwap, acceptingId }) {
   }, [onClose]);
 
   const isProposer = user && swap.sender?._id === user._id;
-  const canChat = swap.status === "accepted" && !isProposer;
+  const canChat =
+    swap.status === "in_progress" ||
+    swap.status === "sender_completed" ||
+    swap.status === "receiver_completed";
 
   const handleChat = () => {
     window.location.href = `/swap/${swap._id}`;
   };
 
+  const handleAcceptWithDeadline = async (e) => {
+    e.preventDefault();
+
+    if (!deadline) {
+      setError("Please select a deadline");
+      return;
+    }
+
+    const selectedDate = new Date(deadline);
+    const now = new Date();
+
+    // Ensure deadline is at least 1 day in the future
+    const minDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+    if (selectedDate <= now) {
+      setError("Deadline must be in the future");
+      return;
+    }
+
+    if (selectedDate < minDate) {
+      setError("Deadline must be at least 1 day from now");
+      return;
+    }
+
+    handleAcceptSwap(deadline);
+  };
+
   return (
-    <div
-      className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      tabIndex={-1}
-      aria-modal="true"
-      role="dialog"
-    >
-      {/* Increased modal width */}
-      <div className="relative w-full max-w-lg md:max-w-xl mx-2 max-h-[95vh] overflow-y-auto bg-white rounded-2xl shadow-2xl border border-slate-200 p-0">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between px-7 py-5 border-b border-slate-100 bg-gradient-to-r from-blue-50 via-white to-slate-100 rounded-t-2xl">
-          <div>
-            <h2 className="text-2xl font-extrabold text-blue-900 tracking-tight leading-tight">
-              <span className="inline-block align-middle mr-2">
-                <SparklesIcon className="w-7 h-7 text-blue-500" />
-              </span>
-              Skill Exchange Details
-            </h2>
-            <p className="text-slate-500 text-xs mt-1">
-              All about this skill proposal
-            </p>
-          </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-overlay">
+      <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-8 relative animate-fade-in border border-secondary-200">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-slate-200">
+          <h2 className="text-xl font-semibold text-slate-900">Swap Details</h2>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-blue-600 transition-colors rounded-full p-1 focus:outline-none"
-            aria-label="Close modal"
+            className="text-slate-400 hover:text-slate-600 transition-colors"
           >
             <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
-        {/* Modal Content */}
-        <div className="p-7 space-y-6">
-          {/* Proposer Info */}
-          <div className="flex flex-col items-center">
+
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* User Info */}
+          <div className="flex items-center gap-4">
             <Avatar
               src={swap.sender?.avatar}
               name={swap.sender?.name}
               size={56}
             />
-            <div className="font-semibold text-slate-900 mt-2 text-base">
-              {isProposer ? "You (Proposer)" : swap.sender?.name || "Unknown"}
-            </div>
-            <div className="flex items-center gap-1 mt-1">
-              <StarIcon className="w-4 h-4 text-yellow-400" />
-              <span className="text-xs text-slate-600">4.8 (12)</span>
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">
+                {swap.sender?.name || "Anonymous"}
+              </h3>
+              <p className="text-slate-600 text-sm">
+                {swap.sender?.email || "No email provided"}
+              </p>
             </div>
           </div>
+
           {/* Skills Exchange */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="text-xs font-semibold text-blue-700 mb-1 flex items-center gap-1">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                <SparklesIcon className="w-4 h-4" />
                 Offering
-              </div>
-              <div className="flex flex-wrap gap-1">
+              </h4>
+              <div className="flex flex-wrap gap-2">
                 {(Array.isArray(swap.offeredSkill)
                   ? swap.offeredSkill
                   : [swap.offeredSkill]
                 ).map((skill) => (
                   <span
                     key={skill}
-                    className="bg-blue-50 text-blue-800 px-3 py-1 rounded-full text-xs font-medium border border-blue-100"
+                    className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full font-medium"
                   >
                     {skill}
                   </span>
                 ))}
               </div>
             </div>
-            <div className="flex-1">
-              <div className="text-xs font-semibold text-yellow-700 mb-1 flex items-center gap-1">
-                <FireIcon className="w-4 h-4 text-orange-400" />
-                Looking for
-              </div>
-              <div className="bg-yellow-50 px-3 py-2 rounded-lg border border-yellow-100">
-                <span className="text-yellow-900 font-semibold text-sm">
+
+            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <h4 className="font-semibold text-yellow-900 mb-2 flex items-center gap-2">
+                <StarIcon className="w-4 h-4" />
+                Looking For
+              </h4>
+              <div className="bg-yellow-100 px-3 py-2 rounded-lg inline-block">
+                <span className="text-yellow-800 font-medium">
                   {swap.requestedSkill}
                 </span>
               </div>
             </div>
           </div>
-          {/* Optional Message */}
+
+          {/* Message */}
           {swap.message && (
-            <div>
-              <div className="text-xs font-semibold text-slate-700 mb-1">
-                Message
-              </div>
-              <div className="bg-slate-50 p-3 rounded border border-slate-200">
-                <p className="text-slate-900 italic text-sm">
-                  "{swap.message}"
-                </p>
-              </div>
+            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+              <h4 className="font-semibold text-slate-900 mb-2">Message</h4>
+              <p className="text-slate-700 italic">"{swap.message}"</p>
             </div>
           )}
-          {/* Details */}
+
+          {/* Status & Difficulty */}
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="bg-slate-50 p-2 rounded border border-slate-100">
               <div className="text-slate-500 uppercase font-medium">Status</div>
@@ -168,6 +184,95 @@ function SwapModal({ swap, user, onClose, handleAcceptSwap, acceptingId }) {
               </div>
             </div>
           </div>
+
+          {/* Deadlines */}
+          {swap.status === "pending" && !isProposer && (
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              <h4 className="font-semibold text-green-900 mb-3">
+                Set Your Deadline
+              </h4>
+              <form
+                onSubmit={handleAcceptWithDeadline}
+                className="space-y-5 mt-2"
+              >
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    When will you complete the requested skill?
+                  </label>
+                  <div className="relative">
+                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-secondary-400" />
+                    <input
+                      type="datetime-local"
+                      value={deadline}
+                      onChange={(e) => {
+                        setDeadline(e.target.value);
+                        setError("");
+                      }}
+                      min={new Date(Date.now() + 24 * 60 * 60 * 1000)
+                        .toISOString()
+                        .slice(0, 16)}
+                      className="block w-full pl-10 pr-4 py-3 text-secondary-900 bg-white border border-secondary-300/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-200 input-focus"
+                      required
+                    />
+                  </div>
+                  <p className="text-xs text-secondary-500 mt-1">
+                    Set a deadline for when you will complete the requested part
+                  </p>
+                </div>
+                {error && (
+                  <div className="text-sm text-error-600 bg-error-50 border border-error-200 rounded-lg p-3 animate-slide-up">
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-error-500 rounded-full mr-2"></div>
+                      {error}
+                    </div>
+                  </div>
+                )}
+                <Button
+                  type="submit"
+                  loading={acceptingId === swap._id}
+                  disabled={acceptingId === swap._id || !deadline}
+                  className="w-full"
+                  size="lg"
+                >
+                  Accept Swap
+                </Button>
+              </form>
+            </div>
+          )}
+
+          {/* Existing Deadlines */}
+          {(swap.proposerDeadline || swap.acceptorDeadline) && (
+            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+              <h4 className="font-semibold text-slate-900 mb-3">Deadlines</h4>
+              <div className="space-y-2 text-sm">
+                {swap.proposerDeadline && (
+                  <div className="flex items-center gap-2">
+                    <CalendarIcon className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-600">
+                      Proposer wants their requested part completed by:
+                    </span>
+                    <span className="font-medium">
+                      {new Date(swap.proposerDeadline).toLocaleDateString()} at{" "}
+                      {new Date(swap.proposerDeadline).toLocaleTimeString()}
+                    </span>
+                  </div>
+                )}
+                {swap.acceptorDeadline && (
+                  <div className="flex items-center gap-2">
+                    <CalendarIcon className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-600">
+                      Acceptor wants their requested part completed by:
+                    </span>
+                    <span className="font-medium">
+                      {new Date(swap.acceptorDeadline).toLocaleDateString()} at{" "}
+                      {new Date(swap.acceptorDeadline).toLocaleTimeString()}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Timestamps */}
           <div className="flex flex-col sm:flex-row gap-2 text-xs text-slate-500">
             <div className="flex items-center gap-1">
@@ -185,6 +290,7 @@ function SwapModal({ swap, user, onClose, handleAcceptSwap, acceptingId }) {
                 : "N/A"}
             </div>
           </div>
+
           {/* Urgent Indicator */}
           {swap.isUrgent && (
             <div className="flex items-center gap-2 p-2 bg-red-50 rounded border border-red-200">
@@ -194,22 +300,35 @@ function SwapModal({ swap, user, onClose, handleAcceptSwap, acceptingId }) {
               </span>
             </div>
           )}
+
           {/* Action Buttons */}
           <div className="space-y-2 pt-1">
             {!isProposer && swap.status === "pending" && user && (
               <Button
-                onClick={handleAcceptSwap}
+                onClick={handleAcceptWithDeadline}
                 className="w-full text-base font-semibold bg-green-600 hover:bg-green-700 text-white shadow"
                 size="md"
                 loading={acceptingId === swap._id}
-                disabled={acceptingId === swap._id}
+                disabled={acceptingId === swap._id || !deadline}
               >
                 <CheckCircleIcon className="w-4 h-4 mr-1" />
                 Accept Swap
               </Button>
             )}
-            {/* Only show chat if not proposer */}
-            {canChat && (
+            {/* Only show chat if not proposer and swap is active */}
+            {canChat && !isProposer && (
+              <Button
+                onClick={handleChat}
+                variant="secondary"
+                className="w-full text-base font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300"
+                size="md"
+              >
+                <ChatBubbleLeftRightIcon className="w-4 h-4 mr-1" />
+                Open Chat
+              </Button>
+            )}
+            {/* Show chat for proposer if swap is active */}
+            {canChat && isProposer && (
               <Button
                 onClick={handleChat}
                 variant="secondary"
@@ -227,15 +346,14 @@ function SwapModal({ swap, user, onClose, handleAcceptSwap, acceptingId }) {
   );
 }
 
-// --- Main Skills Page Component ---
 export default function SkillsPage() {
   const { user } = useUserStore();
   const { addToast } = useToastStore();
   const [openSwaps, setOpenSwaps] = useState([]);
   const [swapLoading, setSwapLoading] = useState(true);
   const [swapError, setSwapError] = useState("");
-  const [acceptingId, setAcceptingId] = useState(null);
   const [modalSwap, setModalSwap] = useState(null);
+  const [acceptingId, setAcceptingId] = useState(null);
   const [swapSearch, setSwapSearch] = useState("");
   const [swapOffered, setSwapOffered] = useState("");
   const [swapRequested, setSwapRequested] = useState("");
@@ -250,45 +368,15 @@ export default function SkillsPage() {
         const data = await apiFetch("/api/swaps/marketplace");
         setOpenSwaps(data);
       } catch (err) {
-        setSwapError("Failed to load open swaps. Please try again.");
-        console.error("Error fetching swaps:", err);
+        setSwapError("Failed to load skill exchanges.");
         addToast({ message: "Failed to load skill exchanges", type: "error" });
+        console.error("Error fetching swaps:", err);
       } finally {
         setSwapLoading(false);
       }
     }
     fetchOpenSwaps();
   }, []);
-
-  const handleAcceptSwap = async () => {
-    if (!modalSwap) return;
-
-    setAcceptingId(modalSwap._id);
-    try {
-      await apiFetch(`/api/swaps/${modalSwap._id}/status`, {
-        method: "PUT",
-        body: JSON.stringify({ status: "accepted" }),
-      });
-
-      // Update local state
-      setOpenSwaps((prev) => prev.filter((swap) => swap._id !== modalSwap._id));
-      setModalSwap(null);
-
-      // Show success toast
-      addToast({
-        message: "Swap accepted! You can now chat with the user.",
-        type: "success",
-      });
-    } catch (err) {
-      console.error("Error accepting swap:", err);
-      addToast({
-        message: "Failed to accept swap. Please try again.",
-        type: "error",
-      });
-    } finally {
-      setAcceptingId(null);
-    }
-  };
 
   // Filter swaps based on search and filters
   const filteredSwaps = openSwaps.filter((swap) => {
@@ -321,6 +409,25 @@ export default function SkillsPage() {
   };
 
   const hasActiveFilters = swapSearch || swapOffered || swapRequested;
+
+  const handleAcceptSwap = async (deadline) => {
+    if (!modalSwap) return;
+    setAcceptingId(modalSwap._id);
+    try {
+      await apiFetch(`/api/swaps/${modalSwap._id}/accept`, {
+        method: "POST",
+        body: JSON.stringify({ deadline }),
+        headers: { "Content-Type": "application/json" },
+      });
+      setOpenSwaps((prev) => prev.filter((s) => s._id !== modalSwap._id));
+      setModalSwap(null);
+      addToast({ message: "Swap accepted!", type: "success" });
+    } catch (err) {
+      addToast({ message: "Failed to accept swap", type: "error" });
+    } finally {
+      setAcceptingId(null);
+    }
+  };
 
   return (
     <>
@@ -425,6 +532,7 @@ export default function SkillsPage() {
               </p>
             </div>
           )}
+
           {/* Error State */}
           {swapError && !swapLoading && (
             <div className="flex flex-col items-center justify-center h-[40vh]">
@@ -446,6 +554,7 @@ export default function SkillsPage() {
               </Card>
             </div>
           )}
+
           {/* Empty State */}
           {!swapLoading && !swapError && filteredSwaps.length === 0 && (
             <div className="flex flex-col items-center justify-center h-[60vh]">
@@ -457,56 +566,52 @@ export default function SkillsPage() {
                   ${
                     hasActiveFilters
                       ? "border-2 border-yellow-300 bg-yellow-50"
-                      : "border-2 border-slate-200 bg-slate-50"
+                      : "border-2 border-slate-300 bg-slate-50"
                   }
                 `}
               >
-                <div className="flex flex-col items-center">
-                  <SparklesIcon
-                    className={`w-20 h-20 mx-auto mb-6 ${
-                      hasActiveFilters ? "text-yellow-400" : "text-slate-300"
-                    }`}
-                  />
-                  <h3
-                    className={`text-2xl font-bold mb-3 ${
-                      hasActiveFilters ? "text-yellow-900" : "text-slate-900"
-                    }`}
-                  >
-                    {hasActiveFilters
-                      ? "No Results Found"
-                      : "No Skill Exchanges Yet"}
-                  </h3>
-                  <p
-                    className={`mb-8 text-base ${
-                      hasActiveFilters ? "text-yellow-800" : "text-slate-600"
-                    }`}
-                  >
-                    {hasActiveFilters
-                      ? "We couldn't find any skill swaps matching your filters. Try changing your search or filter terms."
-                      : "Be the first to create a skill exchange opportunity and connect with others!"}
-                  </p>
-                  {hasActiveFilters ? (
+                {hasActiveFilters ? (
+                  <>
+                    <ExclamationTriangleIcon className="w-16 h-16 text-yellow-600 mx-auto mb-6" />
+                    <h3 className="text-2xl font-bold text-yellow-800 mb-4">
+                      No Matches Found
+                    </h3>
+                    <p className="text-yellow-700 mb-6 text-lg">
+                      Try adjusting your search criteria or filters to find more
+                      skill exchanges.
+                    </p>
                     <Button
                       onClick={clearFilters}
-                      variant="primary"
-                      className="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-semibold px-6 py-2 rounded-lg"
+                      variant="warning"
+                      className="px-6 py-3 text-lg"
                     >
-                      Clear Filters
+                      Clear All Filters
                     </Button>
-                  ) : (
+                  </>
+                ) : (
+                  <>
+                    <SparklesIcon className="w-16 h-16 text-slate-400 mx-auto mb-6" />
+                    <h3 className="text-2xl font-bold text-slate-700 mb-4">
+                      No Skill Exchanges Yet
+                    </h3>
+                    <p className="text-slate-600 mb-6 text-lg">
+                      Be the first to create a skill exchange and start
+                      connecting with other professionals!
+                    </p>
                     <Button
                       as="a"
                       href="/swap"
                       variant="primary"
-                      className="px-6 py-2 rounded-lg"
+                      className="px-6 py-3 text-lg"
                     >
                       Create Skill Exchange
                     </Button>
-                  )}
-                </div>
+                  </>
+                )}
               </Card>
             </div>
           )}
+
           {/* Results Grid */}
           {!swapLoading && !swapError && filteredSwaps.length > 0 && (
             <>
@@ -647,7 +752,6 @@ export default function SkillsPage() {
                       </div>
 
                       {/* Urgent Flag */}
-                      {/* Only show urgent here, not in both places */}
                       {!swap.isUrgent ? null : (
                         <div className="flex items-center gap-2 text-xs text-red-600 mb-2 px-6 font-medium">
                           <ExclamationTriangleIcon className="w-4 h-4" />
@@ -675,6 +779,7 @@ export default function SkillsPage() {
             </>
           )}
         </div>
+
         {/* Swap Modal */}
         {modalSwap && (
           <SwapModal
