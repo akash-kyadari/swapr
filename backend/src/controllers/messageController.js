@@ -18,8 +18,8 @@ exports.sendMessage = async (req, res) => {
     }
 
     // Only allow messaging for accepted swaps
-    if (swap.status !== 'accepted') {
-      return res.status(403).json({ message: 'Can only message accepted swaps' });
+    if (swap.status !== 'in_progress' && swap.status !== 'sender_completed' && swap.status !== 'receiver_completed' && swap.status !== 'both_completed' && swap.status !== 'completed') {
+      return res.status(403).json({ message: 'Can only message active swaps' });
     }
 
     // Check if user is part of this swap

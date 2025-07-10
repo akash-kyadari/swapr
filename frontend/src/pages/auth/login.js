@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Head from "next/head";
 import {
   EnvelopeIcon,
@@ -10,7 +10,7 @@ import useUserStore from "../../store/useUserStore";
 import useToastStore from "../../store/useToastStore";
 
 export default function Login() {
-  const { login, loading, error } = useUserStore();
+  const { login, loading } = useUserStore();
   const { addToast } = useToastStore();
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -20,20 +20,27 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = await login(form);
-    if (success) window.location.href = "/";
+    await login(form, addToast);
   };
 
   const handleGoogle = () => {
-    window.location.href =
-      (process.env.NEXT_PUBLIC_API_URL || "") + "/api/auth/google";
-  };
-
-  useEffect(() => {
-    if (error) {
-      addToast({ message: error, type: "error" });
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    const googleAuthUrl = apiUrl + "/api/auth/google";
+    
+    console.log('Debug Google OAuth:', {
+      apiUrl,
+      googleAuthUrl,
+      hasApiUrl: !!apiUrl,
+      fullUrl: googleAuthUrl
+    });
+    
+    if (!apiUrl) {
+      addToast({ message: "API URL not configured. Please check environment variables.", type: "error" });
+      return;
     }
-  }, [error]);
+    
+    window.location.href = googleAuthUrl;
+  };
 
   return (
     <>
@@ -119,12 +126,7 @@ export default function Login() {
             </div>
 
             {/* Error */}
-            {error && (
-              <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2 animate-fade-in">
-                <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                {error}
-              </div>
-            )}
+            {/* Error */}
 
             {/* Submit Button */}
             <button

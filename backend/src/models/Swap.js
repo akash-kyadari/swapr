@@ -7,7 +7,7 @@ const SwapSchema = new mongoose.Schema({
   requestedSkill: { type: String, required: true },
   status: { 
     type: String, 
-    enum: ['pending', 'accepted', 'rejected', 'in_progress', 'sender_completed', 'receiver_completed', 'completed', 'incomplete'], 
+    enum: ['pending', 'accepted', 'rejected', 'in_progress', 'sender_completed', 'receiver_completed', 'both_completed', 'completed', 'incomplete'], 
     default: 'pending' 
   },
   message: { type: String },
@@ -36,6 +36,10 @@ const SwapSchema = new mongoose.Schema({
   receiverTaskCompleted: { type: Boolean, default: false },
   senderApproved: { type: Boolean, default: false },
   receiverApproved: { type: Boolean, default: false },
+  
+  // Rating permissions
+  senderCanRateReceiver: { type: Boolean, default: false },
+  receiverCanRateSender: { type: Boolean, default: false },
   
   // Incomplete tracking
   incompleteReason: { type: String },

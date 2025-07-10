@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Head from "next/head";
 import {
   UserIcon,
@@ -11,7 +11,7 @@ import useUserStore from "../../store/useUserStore";
 import useToastStore from "../../store/useToastStore";
 
 export default function Register() {
-  const { signup, loading, error } = useUserStore();
+  const { signup, loading } = useUserStore();
   const { addToast } = useToastStore();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -21,22 +21,13 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = await signup(form);
-    if (success) {
-      window.location.href = "/profile/edit";
-    }
+    await signup(form, addToast);
   };
 
   const handleGoogle = () => {
     window.location.href =
       (process.env.NEXT_PUBLIC_API_URL || "") + "/api/auth/google";
   };
-
-  useEffect(() => {
-    if (error) {
-      addToast({ message: error, type: "error" });
-    }
-  }, [error]);
 
   return (
     <>
@@ -152,12 +143,7 @@ export default function Register() {
             </div>
 
             {/* Error */}
-            {error && (
-              <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2 animate-fade-in">
-                <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                {error}
-              </div>
-            )}
+            {/* Error */}
 
             {/* Submit */}
             <button

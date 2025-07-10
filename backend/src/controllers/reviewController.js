@@ -27,6 +27,14 @@ exports.createReview = async (req, res) => {
       return res.status(400).json({ message: 'Cannot review yourself' });
     }
     
+    // Check if user has permission to rate the other person
+    const isSender = swap.sender.toString() === req.user.id;
+    const canRate = isSender ? swap.senderCanRateReceiver : swap.receiverCanRateSender;
+    
+    if (!canRate) {
+      return res.status(400).json({ message: 'You can only rate after approving the other person\'s work' });
+    }
+    
     // Prevent duplicate reviews for the same swap by the same user
     const exists = await Review.findOne({ reviewer: req.user.id, swap: swapId });
     if (exists) {
@@ -46,10 +54,20 @@ exports.createReview = async (req, res) => {
       feedback,
     });
     
-    // Update reviewee's average rating
-    const reviews = await Review.find({ reviewee: revieweeId });
-    const avg = reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length;
-    await User.findByIdAndUpdate(revieweeId, { rating: avg, numReviews: reviews.length });
+    // Mark that this user has rated for this swap
+    if (isSender) {
+      swap.senderCanRateReceiver = false; // Can't rate again
+    } else {
+      swap.receiverCanRateSender = false; // Can't rate again
+    }
+    await swap.save();
+    
+    // Update reviewee's average rating and ensure swap count is correct
+    const { updateUserStats } = require('./userController');
+    await updateUserStats(revieweeId);
+    
+    // Also update the reviewer's stats to ensure consistency
+    await updateUserStats(req.user.id);
     
     res.status(201).json(review);
   } catch (err) {
@@ -77,6 +95,20 @@ exports.getReviewsBySwap = async (req, res) => {
       .populate('reviewer', 'name avatar')
       .populate('reviewee', 'name avatar')
       .sort('-createdAt');
+    res.json(reviews);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Get all reviews received by a user (for profile display)
+exports.getUserReviews = async (req, res) => {
+  try {
+    const reviews = await Review.find({ reviewee: req.params.userId })
+      .populate('reviewer', 'name avatar')
+      .populate('swap', 'offeredSkill requestedSkill')
+      .sort('-createdAt')
+      .limit(10); // Limit to recent reviews
     res.json(reviews);
   } catch (err) {
     res.status(500).json({ message: err.message });

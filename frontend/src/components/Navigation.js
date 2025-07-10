@@ -12,17 +12,18 @@ import {
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import useUserStore from "../store/useUserStore";
+import useToastStore from '../store/useToastStore';
 import Avatar from "./Avatar";
 export default function Navigation() {
   const { user, logout } = useUserStore();
+  const { addToast } = useToastStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
 
   const navigation = [
     { name: "Home", href: "/", icon: HomeIcon },
     { name: "Skills", href: "/skills", icon: BriefcaseIcon },
-    { name: "Swap", href: "/swap", icon: UserGroupIcon },
-    { name: "Messages", href: "/messages", icon: ChatBubbleLeftRightIcon },
+    { name: "Swap", href: "/swap", icon: UserGroupIcon }
   ];
 
   return (
@@ -73,7 +74,7 @@ export default function Navigation() {
                   </div>
                 </Link>
                 <button
-                  onClick={logout}
+                  onClick={() => logout(addToast)}
                   className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
                 >
                   Logout
@@ -102,7 +103,7 @@ export default function Navigation() {
             {user ? (
               <>
                 <button
-                  onClick={logout}
+                  onClick={() => logout(addToast)}
                   className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-200"
                   aria-label="Logout"
                   title="Logout"

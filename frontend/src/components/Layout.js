@@ -9,6 +9,7 @@ export default function Layout({ children }) {
   const isMessagesPage = router.pathname === "/messages";
   const isSkillsPage = router.pathname === "/skills";
   const isSwapPage = router.pathname === "/swap";
+  const isSwapDetailPage = router.pathname.startsWith("/swap/");
   const isLoginPromptPage =
     !userLoading &&
     !user &&
@@ -39,17 +40,16 @@ export default function Layout({ children }) {
             }
           />
         </main>
-      ) : isSkillsPage || isSwapPage ? (
-        // Remove all side/top/bottom padding for /skills and /swap page, let the page handle its own spacing
+      ) : isSkillsPage || isSwapPage || isSwapDetailPage ? (
+        // Remove all side/top/bottom padding for /skills, /swap, and /swap/[id] pages
         <main className="flex-1 w-full max-w-none m-0 p-0">{children}</main>
       ) : (
         <main className="flex-1 max-w-[98vw] mx-auto py-8 px-4 sm:px-6 lg:px-8">
-          {children}
-        </main>
+          {children}</main>
       )}
 
       {/* Footer */}
-      {!isMessagesPage && !isLoginPromptPage && (
+      {!isMessagesPage && !isLoginPromptPage && !isSwapDetailPage && (
         <footer className="flex-shrink-0 bg-white/80 backdrop-blur-md border-t border-slate-200/60 mt-1">
           <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
             <div className="text-center text-sm text-slate-500">

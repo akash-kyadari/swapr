@@ -9,12 +9,14 @@ import ToastContainer from "../components/ToastContainer";
 const protectedRoutes = ["/profile/edit"];
 
 export default function App({ Component, pageProps }) {
-  const { user, loading, fetchUser } = useUserStore();
+  const { user, loading, init } = useUserStore();
   const router = useRouter();
 
-  // Only fetch user on initial mount, not on every route change
+  // Initialize user store on app load
   useEffect(() => {
-    fetchUser();
+    console.log('Initializing app...');
+    init();
+    
     // Ensure theme class is set on initial load
     const { theme } = useThemeStore.getState();
     if (typeof document !== "undefined") {
@@ -26,7 +28,14 @@ export default function App({ Component, pageProps }) {
 
   useEffect(() => {
     // Debug logging
-    console.log("Auth Debug:", { user, loading, path: router.pathname });
+    console.log("Auth Debug:", { 
+      user: user ? { id: user._id, name: user.name, email: user.email } : null, 
+      loading, 
+      path: router.pathname,
+      hasUser: !!user,
+      userType: user ? 'authenticated' : 'not authenticated'
+    });
+    
     if (!loading && !user && protectedRoutes.includes(router.pathname)) {
       console.log(
         "Redirecting to /auth/login because user is not authenticated"
@@ -38,7 +47,10 @@ export default function App({ Component, pageProps }) {
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
-        Loading...
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
       </div>
     );
 

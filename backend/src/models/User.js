@@ -12,6 +12,7 @@ const UserSchema = new mongoose.Schema({
   skillsNeeded: [{ type: String }],
   rating: { type: Number, default: 0 },
   numReviews: { type: Number, default: 0 },
+  completedSwapsCount: { type: Number, default: 0 }, // Track completed swaps
   googleId: { type: String },
 }, { timestamps: true });
 

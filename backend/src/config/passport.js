@@ -25,17 +25,44 @@ passport.use(new GoogleStrategy({
   callbackURL: '/api/auth/google/callback',
 }, async (accessToken, refreshToken, profile, done) => {
   try {
-    let user = await User.findOne({ googleId: profile.id });
-    if (!user) {
-      user = await User.create({
-        name: profile.displayName,
-        email: profile.emails[0].value,
-        avatar: profile.photos[0].value,
-        googleId: profile.id,
-      });
+    console.log('Google OAuth profile:', {
+      id: profile.id,
+      displayName: profile.displayName,
+      email: profile.emails?.[0]?.value,
+      hasPhoto: !!profile.photos?.[0]?.value
+    });
+
+    if (!profile.emails || !profile.emails[0]) {
+      return done(new Error('Email is required for Google OAuth'), null);
     }
+
+    let user = await User.findOne({ googleId: profile.id });
+    
+    if (!user) {
+      // Check if user exists with same email but different auth method
+      user = await User.findOne({ email: profile.emails[0].value });
+      if (user) {
+        // Update existing user with Google ID
+        user.googleId = profile.id;
+        if (!user.avatar && profile.photos?.[0]?.value) {
+          user.avatar = profile.photos[0].value;
+        }
+        await user.save();
+      } else {
+        // Create new user
+        user = await User.create({
+          name: profile.displayName,
+          email: profile.emails[0].value,
+          avatar: profile.photos?.[0]?.value || null,
+          googleId: profile.id,
+        });
+      }
+    }
+
+    console.log('Google OAuth user found/created:', user._id);
     return done(null, user);
   } catch (err) {
+    console.error('Google OAuth error:', err);
     return done(err, null);
   }
 }));

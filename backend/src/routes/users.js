@@ -11,5 +11,7 @@ router.get('/me', auth, userController.getProfile);
 router.put('/me', auth, upload.single('avatar'), userController.updateProfile);
 // Get user by ID
 router.get('/:id', userController.getUserById);
+// Update all users' stats (admin function)
+router.post('/update-stats', userController.updateAllUserStats);
 
 module.exports = router; 

@@ -101,6 +101,51 @@ const initializeSocket = (server) => {
       });
     });
 
+    // Handle task completion
+    socket.on('task_completed', async (data) => {
+      const { swapId, userId } = data;
+      console.log(`Task completed in swap ${swapId} by user ${userId}`);
+      
+      try {
+        // Fetch updated swap data
+        const updatedSwap = await Swap.findById(swapId)
+          .populate('sender', 'name avatar')
+          .populate('receiver', 'name avatar');
+        
+        if (updatedSwap) {
+          socket.to(`swap-${swapId}`).emit('swap_updated', updatedSwap);
+        }
+      } catch (error) {
+        console.error('Error fetching updated swap:', error);
+      }
+    });
+
+    // Handle task approval
+    socket.on('task_approved', async (data) => {
+      const { swapId, userId } = data;
+      console.log(`Task approved in swap ${swapId} by user ${userId}`);
+      
+      try {
+        // Fetch updated swap data
+        const updatedSwap = await Swap.findById(swapId)
+          .populate('sender', 'name avatar')
+          .populate('receiver', 'name avatar');
+        
+        if (updatedSwap) {
+          socket.to(`swap-${swapId}`).emit('swap_updated', updatedSwap);
+        }
+      } catch (error) {
+        console.error('Error fetching updated swap:', error);
+      }
+    });
+
+    // Handle message sending
+    socket.on('send_message', (data) => {
+      const { swapId, message } = data;
+      console.log(`Message sent in swap ${swapId}`);
+      socket.to(`swap-${swapId}`).emit('new_message', message);
+    });
+
     socket.on('disconnect', () => {
       console.log(`User disconnected: ${socket.userId}`);
     });

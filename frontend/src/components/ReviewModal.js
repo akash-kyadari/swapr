@@ -16,7 +16,12 @@ export default function ReviewModal({ swap, otherUser, onClose, onReviewSubmitte
     const checkExistingReview = async () => {
       try {
         const reviews = await apiFetch(`/api/reviews/swap/${swap._id}`);
-        const userReview = reviews.find(review => review.reviewer._id === swap.sender._id || review.reviewer._id === swap.receiver._id);
+        // Find review where current user is the reviewer
+        // We need to determine if current user is sender or receiver
+        const isCurrentUserSender = swap.sender._id === otherUser._id ? false : true;
+        const currentUserId = isCurrentUserSender ? swap.sender._id : swap.receiver._id;
+        
+        const userReview = reviews.find(review => review.reviewer._id === currentUserId);
         if (userReview) {
           setExistingReview(userReview);
         }
@@ -25,10 +30,43 @@ export default function ReviewModal({ swap, otherUser, onClose, onReviewSubmitte
       }
     };
 
-    if (swap.status === 'completed') {
+    if (swap.status === 'completed' && otherUser) {
       checkExistingReview();
     }
-  }, [swap._id, swap.status]);
+  }, [swap._id, swap.status, otherUser]);
+
+  // Check if current user can rate the other user
+  const canRate = () => {
+    if (!swap || swap.status !== 'completed') return false;
+    
+    // Check if user has already reviewed
+    if (existingReview) return false;
+    
+    // Check if user has permission to rate
+    // We need to determine if current user is sender or receiver in this swap
+    // If otherUser is the sender, then current user must be the receiver
+    // If otherUser is the receiver, then current user must be the sender
+    const isCurrentUserSender = swap.sender._id !== otherUser._id;
+    
+    // If current user is sender, they can rate receiver if senderCanRateReceiver is true
+    // If current user is receiver, they can rate sender if receiverCanRateSender is true
+    const canRateResult = isCurrentUserSender ? swap.senderCanRateReceiver : swap.receiverCanRateSender;
+    
+    console.log('Rating Debug:', {
+      swapId: swap._id,
+      swapStatus: swap.status,
+      otherUserId: otherUser._id,
+      senderId: swap.sender._id,
+      receiverId: swap.receiver._id,
+      isCurrentUserSender,
+      senderCanRateReceiver: swap.senderCanRateReceiver,
+      receiverCanRateSender: swap.receiverCanRateSender,
+      canRateResult,
+      existingReview: !!existingReview
+    });
+    
+    return canRateResult;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,7 +105,7 @@ export default function ReviewModal({ swap, otherUser, onClose, onReviewSubmitte
   // If swap is not completed, show message
   if (swap.status !== 'completed') {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg max-w-md w-full p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Review Not Available</h3>
@@ -101,10 +139,47 @@ export default function ReviewModal({ swap, otherUser, onClose, onReviewSubmitte
     );
   }
 
+  // If user cannot rate, show message
+  if (!canRate()) {
+    return (
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg max-w-md w-full p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Rating Not Available</h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div className="text-center py-8">
+            <div className="text-gray-500 mb-4">
+              You can only rate after you have approved the other person's work.
+            </div>
+            <div className="text-sm text-gray-400">
+              Approve their completed work to enable rating.
+            </div>
+          </div>
+          
+          <div className="flex justify-end">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // If user has already reviewed, show their review
   if (existingReview) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg max-w-md w-full p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Your Review</h3>
@@ -173,7 +248,7 @@ export default function ReviewModal({ swap, otherUser, onClose, onReviewSubmitte
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-md w-full p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">

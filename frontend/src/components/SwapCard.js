@@ -24,7 +24,9 @@ export default function SwapCard({ swap, onClick }) {
           </h3>
           <div className="flex items-center gap-1 mt-1">
             <StarIcon className="w-4 h-4 text-yellow-400" />
-            <span className="text-xs text-slate-500">4.8 (12)</span>
+            <span className="text-xs text-slate-500">
+              {swap.sender?.rating ? `${swap.sender.rating.toFixed(1)}` : '0.0'} ({swap.sender?.completedSwapsCount || 0})
+            </span>
           </div>
         </div>
       </div>

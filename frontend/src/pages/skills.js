@@ -114,6 +114,12 @@ function SwapModal({ swap, user, onClose, handleAcceptSwap, acceptingId }) {
             <h3 className="text-lg font-semibold text-slate-900">
               {swap.sender?.name || "Anonymous"}
             </h3>
+            <div className="flex items-center gap-1 mt-1">
+              <StarIcon className="w-4 h-4 text-yellow-400" />
+              <span className="text-sm text-slate-600">
+                {swap.sender?.rating ? `${swap.sender.rating.toFixed(1)}` : '0.0'} ({swap.sender?.completedSwapsCount || 0})
+              </span>
+            </div>
             <p className="text-slate-600 text-sm">
               {swap.sender?.email || "No email provided"}
             </p>
@@ -376,7 +382,7 @@ export default function SkillsPage() {
         setOpenSwaps(data);
       } catch (err) {
         setSwapError("Failed to load skill exchanges.");
-        addToast({ message: "Failed to load skill exchanges", type: "error" });
+        addToast({ message: "Failed to load skill exchanges", type: "skill-error" });
         console.error("Error fetching swaps:", err);
       } finally {
         setSwapLoading(false);
@@ -428,7 +434,7 @@ export default function SkillsPage() {
       });
       setOpenSwaps((prev) => prev.filter((s) => s._id !== modalSwap._id));
       setModalSwap(null);
-      addToast({ message: "Swap accepted!", type: "success" });
+      addToast({ message: "Swap accepted!", type: "skill-success" });
     } catch (err) {
       let message = "Failed to accept swap";
       if (err && err.message) {
@@ -437,7 +443,7 @@ export default function SkillsPage() {
           if (parsed && parsed.message) message = parsed.message;
         } catch {}
       }
-      addToast({ message, type: "error" });
+      addToast({ message, type: "skill-error" });
     } finally {
       setAcceptingId(null);
     }

@@ -57,7 +57,7 @@ function CreateSwapModal({ user, open, onClose, onSwapCreated }) {
       setError("Please fill in all required fields including deadline.");
       addToast({
         message: "Fill all required fields including deadline",
-        type: "warning",
+        type: "swap-warning",
       });
       return;
     }
@@ -66,14 +66,14 @@ function CreateSwapModal({ user, open, onClose, onSwapCreated }) {
     const minDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     if (selectedDate <= now) {
       setError("Deadline must be in the future");
-      addToast({ message: "Deadline must be in the future", type: "warning" });
+      addToast({ message: "Deadline must be in the future", type: "swap-warning" });
       return;
     }
     if (selectedDate < minDate) {
       setError("Deadline must be at least 1 day from now");
       addToast({
         message: "Deadline must be at least 1 day from now",
-        type: "warning",
+        type: "swap-warning",
       });
       return;
     }
@@ -93,10 +93,10 @@ function CreateSwapModal({ user, open, onClose, onSwapCreated }) {
       });
       onSwapCreated(newSwap);
       onClose();
-      addToast({ message: "Swap created successfully!", type: "success" });
+      addToast({ message: "Swap created successfully!", type: "swap-success" });
     } catch (err) {
       setError("Failed to create swap. Please try again.");
-      addToast({ message: "Failed to create swap", type: "error" });
+      addToast({ message: "Failed to create swap", type: "swap-error" });
     } finally {
       setSubmitting(false);
     }
@@ -105,12 +105,13 @@ function CreateSwapModal({ user, open, onClose, onSwapCreated }) {
   if (!open) return null;
   return ReactDOM.createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-xl scale-85 max-w-lg w-full p-8 relative animate-fade-in border border-secondary-200"
+        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 p-8 relative animate-fade-in border border-gray-200"
         onClick={(e) => e.stopPropagation()}
+        style={{ maxHeight: '90vh', overflowY: 'auto' }}
       >
         <button
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
@@ -226,14 +227,20 @@ function CreateSwapModal({ user, open, onClose, onSwapCreated }) {
                 </div>
               </div>
             )}
-            <Button
+            <button
               type="submit"
-              loading={submitting}
-              className="w-full"
-              size="lg"
+              disabled={submitting}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-800 text-white font-bold py-4 px-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {submitting ? "Creating Exchange..." : "Propose Swap"}
-            </Button>
+              {submitting ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Creating Exchange...
+                </div>
+              ) : (
+                "Propose Swap"
+              )}
+            </button>
           </form>
         )}
       </div>
@@ -483,6 +490,12 @@ export function AcceptedSwapCard({ swap }) {
             <p className="mt-2 text-sm font-medium text-gray-800">
               {user.name}
             </p>
+            <div className="flex items-center gap-1 mt-1">
+              <StarIcon className="w-3 h-3 text-yellow-400" />
+              <span className="text-xs text-gray-500">
+                {user.rating ? `${user.rating.toFixed(1)}` : '0.0'} ({user.completedSwapsCount || 0})
+              </span>
+            </div>
             <p className="text-xs text-gray-500">
               {i === 0 ? "Proposer" : "Acceptor"}
             </p>
@@ -606,6 +619,150 @@ export function AcceptedSwapCard({ swap }) {
   );
 }
 
+export function CompletedSwapCard({ swap }) {
+  const router = useRouter();
+
+  const handleClick = () => {
+    router.push(`/swap/${swap._id}`);
+  };
+
+  return (
+    <div
+      onClick={handleClick}
+      className="cursor-pointer bg-white border border-green-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 space-y-5 group"
+    >
+      {/* Header */}
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className="text-xl font-semibold text-gray-800">Completed Swap</h3>
+          <p className="text-sm text-gray-500">ID: #{swap._id.slice(-6)}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <CheckCircleIcon className="w-5 h-5 text-green-600" />
+          <span className="bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
+            Completed
+          </span>
+        </div>
+      </div>
+
+      {/* Participants */}
+      <div className="grid grid-cols-2 gap-4">
+        {[swap.sender, swap.receiver].map((user, i) => (
+          <div
+            key={user._id}
+            className="flex flex-col items-center bg-green-50/30 rounded-xl p-3"
+          >
+            <Avatar src={user.avatar} name={user.name} size={48} />
+            <p className="mt-2 text-sm font-medium text-gray-800">
+              {user.name}
+            </p>
+            <div className="flex items-center gap-1 mt-1">
+              <StarIcon className="w-3 h-3 text-yellow-400" />
+              <span className="text-xs text-gray-500">
+                {user.rating ? `${user.rating.toFixed(1)}` : '0.0'} ({user.completedSwapsCount || 0})
+              </span>
+            </div>
+            <p className="text-xs text-gray-500">
+              {i === 0 ? "Proposer" : "Acceptor"}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Skills */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-xs text-gray-500 mb-1">Offered</p>
+          <div className="flex flex-nowrap gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
+            {(Array.isArray(swap.offeredSkill)
+              ? swap.offeredSkill
+              : [swap.offeredSkill]
+            )
+              .slice(0, 3)
+              .map((skill) => (
+                <span
+                  key={skill}
+                  className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full font-medium truncate"
+                >
+                  {skill}
+                </span>
+              ))}
+            {swap.offeredSkill.length > 3 && (
+              <span className="text-gray-400 text-sm">...</span>
+            )}
+          </div>
+        </div>
+        <div>
+          <p className="text-xs text-gray-500 mb-1">Received</p>
+          <div className="flex flex-nowrap gap-2 overflow-hidden whitespace-nowrap text-ellipsis">
+            <span className="bg-green-100 text-green-700 text-sm px-3 py-1 rounded-full font-medium inline-block truncate">
+              {swap.requestedSkill}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="space-y-3">
+        {/* Proposer Message */}
+        {swap.message && (
+          <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+            <p className="text-xs text-gray-500 mb-1 font-medium">Proposer's Message:</p>
+            <p className="text-sm text-gray-700 italic">"{swap.message}"</p>
+          </div>
+        )}
+        {/* Acceptor Message */}
+        {swap.acceptorMessage && (
+          <div className="bg-green-50 rounded-lg p-3 border border-green-100">
+            <p className="text-xs text-green-600 mb-1 font-medium">Acceptor's Request:</p>
+            <p className="text-sm text-green-700 italic">"{swap.acceptorMessage}"</p>
+          </div>
+        )}
+      </div>
+
+      {/* Status & Difficulty */}
+      <div className="flex flex-col gap-1 text-sm text-gray-700">
+        <p>
+          <span className="font-semibold">Difficulty:</span>{" "}
+          <span
+            className={`font-bold ${
+              swap.difficultyLevel === "Beginner"
+                ? "text-lime-700"
+                : swap.difficultyLevel === "Intermediate"
+                ? "text-yellow-700"
+                : "text-red-700"
+            }`}
+          >
+            {swap.difficultyLevel}
+          </span>
+        </p>
+        <p>
+          <span className="font-semibold">Status:</span>{" "}
+          <span className="capitalize font-[500] text-green-600">Completed</span>
+        </p>
+      </div>
+
+      {/* Completion Date */}
+      <div className="flex items-center gap-2 text-sm text-green-600">
+        <CheckCircleIcon className="w-4 h-4" />
+        <span className="font-medium">Completed on {swap.completedAt ? new Date(swap.completedAt).toLocaleDateString() : new Date(swap.createdAt).toLocaleDateString()}</span>
+      </div>
+
+      {/* Timestamps */}
+      <div className="flex flex-col sm:flex-row justify-between text-xs text-gray-400 border-t pt-3 mt-2 gap-2">
+        <div className="flex items-center gap-1">
+          <ClockIcon className="w-4 h-4" />
+          Created: {new Date(swap.createdAt).toLocaleString()}
+        </div>
+        <div className="flex items-center gap-1">
+          <CheckCircleIcon className="w-4 h-4" />
+          Completed: {swap.completedAt ? new Date(swap.completedAt).toLocaleString() : "Not completed yet"}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Swap() {
   const { user, loading: userLoading } = useUserStore();
   const { addToast } = useToastStore();
@@ -615,6 +772,7 @@ export default function Swap() {
   const [modalSwap, setModalSwap] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [acceptedSwaps, setAcceptedSwaps] = useState([]);
+  const [completedSwaps, setCompletedSwaps] = useState([]);
   const [pendingModalSwap, setPendingModalSwap] = useState(null);
   const router = useRouter();
 
@@ -629,9 +787,10 @@ export default function Swap() {
           ...(Array.isArray(data.activeSwaps) ? data.activeSwaps : []),
         ];
         setSwaps(allSwaps);
+        setCompletedSwaps(data.completedSwaps || []);
       } catch (err) {
         setError("Failed to load your swaps.");
-        addToast({ message: "Failed to load your swaps", type: "error" });
+        addToast({ message: "Failed to load your swaps", type: "swap-error" });
       } finally {
         setLoading(false);
       }
@@ -652,12 +811,23 @@ export default function Swap() {
   }, []);
 
   const handleSwapCreated = (newSwap) => {
-    setSwaps((prev) => [newSwap, ...prev]);
+    // Ensure the sender data is populated with current user info
+    const swapWithUserData = {
+      ...newSwap,
+      sender: {
+        _id: user._id,
+        name: user.name,
+        avatar: user.avatar,
+        rating: user.rating,
+        completedSwapsCount: user.completedSwapsCount
+      }
+    };
+    setSwaps((prev) => [swapWithUserData, ...prev]);
   };
 
   // Split swaps into active and pending
   const activeSwaps = swaps.filter((swap) =>
-    ["in_progress", "sender_completed", "receiver_completed"].includes(
+    ["in_progress", "sender_completed", "receiver_completed", "both_completed"].includes(
       swap.status
     )
   );
@@ -733,6 +903,37 @@ export default function Swap() {
                 <h3 className="text-lg font-semibold text-slate-700 mb-2">No Pending Swaps</h3>
                 <p className="text-slate-500 mb-4">You don't have any pending skill swap requests.</p>
                 <p className="text-sm text-slate-400">Create a new swap to start exchanging skills with others.</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Completed Swaps Section */}
+        <div className="flex items-center justify-between px-8 py-3 border-t border-slate-200 bg-transparent">
+          <h2 className="text-xl font-bold text-slate-900">
+            Completed Swaps ({completedSwaps.length})
+          </h2>
+        </div>
+        <div className="relative w-full">
+          {completedSwaps.length > 0 ? (
+            <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8 w-full px-8 pb-12">
+              {completedSwaps.map((swap) => (
+                <CompletedSwapCard
+                  key={swap._id}
+                  swap={swap}
+                  onClick={() => router.push(`/swap/${swap._id}`)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="px-8 py-12">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                  <CheckCircleIcon className="w-8 h-8 text-green-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-700 mb-2">No Completed Swaps</h3>
+                <p className="text-slate-500 mb-4">You haven't completed any skill swaps yet.</p>
+                <p className="text-sm text-slate-400">Complete your active swaps to see them here.</p>
               </div>
             </div>
           )}

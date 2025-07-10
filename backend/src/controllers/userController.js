@@ -37,4 +37,61 @@ exports.getUserById = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+};
+
+// Utility function to update user stats (can be called internally)
+exports.updateUserStats = async (userId) => {
+  try {
+    const Swap = require('../models/Swap');
+    const Review = require('../models/Review');
+    
+    // Count completed swaps
+    const completedSwapsCount = await Swap.countDocuments({
+      status: 'completed',
+      $or: [
+        { sender: userId },
+        { receiver: userId }
+      ]
+    });
+    
+    // Calculate average rating
+    const reviews = await Review.find({ reviewee: userId });
+    const avgRating = reviews.length > 0 ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length : 0;
+    
+    // Update user
+    await User.findByIdAndUpdate(userId, {
+      completedSwapsCount,
+      rating: avgRating,
+      numReviews: reviews.length
+    });
+    
+      return { completedSwapsCount, rating: avgRating, numReviews: reviews.length };
+} catch (err) {
+  console.error('Error updating user stats:', err);
+  throw err;
+}
+};
+
+// Update all users' stats (admin function)
+exports.updateAllUserStats = async (req, res) => {
+  try {
+    const users = await User.find({});
+    let updatedCount = 0;
+    
+    for (const user of users) {
+      try {
+        await exports.updateUserStats(user._id);
+        updatedCount++;
+      } catch (err) {
+        console.error(`Failed to update user ${user._id}:`, err);
+      }
+    }
+    
+    res.json({ 
+      message: `Updated stats for ${updatedCount} users`,
+      updatedCount 
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 }; 

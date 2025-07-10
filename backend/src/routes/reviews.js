@@ -9,5 +9,7 @@ router.post('/', auth, reviewController.createReview);
 router.get('/user/:userId', reviewController.getReviewsByUser);
 // Get reviews for a specific swap
 router.get('/swap/:swapId', auth, reviewController.getReviewsBySwap);
+// Get all reviews received by a user (for profile)
+router.get('/received/:userId', reviewController.getUserReviews);
 
 module.exports = router; 

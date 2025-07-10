@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { StarIcon } from '@heroicons/react/24/solid';
 import useUserStore from '../../store/useUserStore';
 import useToastStore from '../../store/useToastStore';
 import Card from '../../components/Card';
@@ -24,6 +25,8 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [editMode, setEditMode] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
   const skillInputRef = useRef(null);
   const [skillInput, setSkillInput] = useState('');
 
@@ -38,8 +41,25 @@ export default function ProfilePage() {
         skillsNeeded: (user.skillsNeeded || []).join(', '),
         avatar: user.avatar || '',
       });
+      
+      // Fetch user's reviews
+      fetchUserReviews();
     }
   }, [user]);
+
+  const fetchUserReviews = async () => {
+    if (!user) return;
+    
+    setLoadingReviews(true);
+    try {
+      const reviewsData = await apiFetch(`/api/reviews/received/${user._id}`);
+      setReviews(reviewsData);
+    } catch (err) {
+      console.error('Failed to fetch reviews:', err);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
 
   const handleChange = e => {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -81,11 +101,11 @@ export default function ProfilePage() {
       });
       setUser(updatedUser);
       setSuccess('Profile updated!');
-      addToast({ message: 'Profile updated!', type: 'success' });
+      addToast({ message: 'Profile updated!', type: 'profile-success' });
       setEditMode(false);
     } catch (err) {
       setError(err.message);
-      addToast({ message: err.message || 'Failed to update profile', type: 'error' });
+      addToast({ message: err.message || 'Failed to update profile', type: 'profile-error' });
     } finally {
       setLoading(false);
     }
@@ -106,6 +126,12 @@ export default function ProfilePage() {
       <Card className="w-full max-w-2xl shadow-card rounded-3xl p-6 sm:p-10 animate-fade-in">
         <div className="flex flex-col items-center gap-6 mb-6">
           <Avatar src={form.avatar} name={form.name} size={80} />
+          <div className="flex items-center gap-2">
+            <StarIcon className="w-5 h-5 text-yellow-400" />
+            <span className="text-lg font-semibold text-gray-700">
+              {user.rating ? `${user.rating.toFixed(1)}` : '0.0'} ({user.completedSwapsCount || 0})
+            </span>
+          </div>
         </div>
         {!editMode ? (
           <div className="space-y-4 text-base text-secondary-800">
@@ -126,6 +152,46 @@ export default function ProfilePage() {
             </div>
             <div>
               <span className="font-semibold text-secondary-700">Skills Offered:</span> {(user.skillsOffered && user.skillsOffered.length) ? user.skillsOffered.join(', ') : <span className="text-textgray">(none)</span>}
+            </div>
+            <div>
+              <span className="font-semibold text-secondary-700">Rating:</span> {user.rating ? `${user.rating.toFixed(1)}` : '0.0'} ({user.completedSwapsCount || 0} completed swaps)
+            </div>
+            
+            {/* Reviews Section */}
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold text-secondary-700 mb-3">Recent Reviews</h3>
+              {loadingReviews ? (
+                <div className="text-center py-4">
+                  <Loader />
+                  <p className="text-sm text-gray-500 mt-2">Loading reviews...</p>
+                </div>
+              ) : reviews.length > 0 ? (
+                <div className="space-y-3 max-h-60 overflow-y-auto">
+                  {reviews.map((review) => (
+                    <div key={review._id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Avatar src={review.reviewer?.avatar} name={review.reviewer?.name} size={24} />
+                        <span className="font-medium text-sm text-gray-800">{review.reviewer?.name}</span>
+                        <div className="flex items-center gap-1 ml-auto">
+                          <StarIcon className="w-3 h-3 text-yellow-400" />
+                          <span className="text-sm font-medium">{review.rating}</span>
+                        </div>
+                      </div>
+                      {review.feedback && (
+                        <p className="text-sm text-gray-600 italic">"{review.feedback}"</p>
+                      )}
+                      <div className="text-xs text-gray-400 mt-2">
+                        {new Date(review.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  <p>No reviews yet</p>
+                  <p className="text-sm">Complete some swaps to receive reviews!</p>
+                </div>
+              )}
             </div>
             
             <button
