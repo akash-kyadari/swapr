@@ -34,6 +34,15 @@ exports.proposeSwap = async (req, res) => {
       proposerDeadline: deadline, // When the proposer wants their requested part completed
       status: 'pending',
     });
+    // Emit global event for new swap
+    try {
+      const { getIO } = require('../sockets/socketServer');
+      const io = getIO();
+      await swap.populate('sender', 'name avatar');
+      io.emit('swap_created', swap);
+    } catch (socketError) {
+      console.error('Socket.IO error:', socketError);
+    }
     res.status(201).json(swap);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -97,6 +106,7 @@ exports.updateSwapStatus = async (req, res) => {
         const { getIO } = require('../sockets/socketServer');
         const io = getIO();
         io.to(`swap-${swap._id}`).emit('swap_updated', swap);
+        io.emit('swap_accepted', swap); // Global event for all clients
       } catch (socketError) {
         console.error('Socket.IO error:', socketError);
       }
@@ -138,6 +148,9 @@ exports.updateSwapStatus = async (req, res) => {
         const { getIO } = require('../sockets/socketServer');
         const io = getIO();
         io.to(`swap-${swap._id}`).emit('swap_updated', swap);
+        if (swap.status === 'completed') {
+          io.emit('swap_completed', swap); // Global event for all clients
+        }
       } catch (socketError) {
         console.error('Socket.IO error:', socketError);
       }
@@ -168,13 +181,23 @@ exports.updateSwapStatus = async (req, res) => {
 
       // Check if both approved
       if (swap[`${userRole}Approved`]) {
+        console.log(`Both users approved swap ${swap._id}, marking as completed`);
         swap.status = 'completed';
         swap.completedAt = new Date();
         
+        // Save the swap first with completed status
+        await swap.save();
+        
         // Update completed swaps count for both users using utility function
         const { updateUserStats } = require('./userController');
-        await updateUserStats(swap.sender);
-        await updateUserStats(swap.receiver);
+        try {
+          console.log(`Updating user stats for swap ${swap._id}: sender ${swap.sender}, receiver ${swap.receiver}`);
+          const senderStats = await updateUserStats(swap.sender);
+          const receiverStats = await updateUserStats(swap.receiver);
+          console.log(`Updated user stats after swap completion: sender ${swap.sender} ->`, senderStats, 'receiver', swap.receiver, '->', receiverStats);
+        } catch (err) {
+          console.error('Error updating user stats after swap completion:', err);
+        }
         
         // When swap is completed, both users can rate each other
         swap.senderCanRateReceiver = true;
@@ -193,7 +216,10 @@ exports.updateSwapStatus = async (req, res) => {
         }
       }
 
-      await swap.save();
+      // Only save if swap wasn't already saved (i.e., if it wasn't completed)
+      if (swap.status !== 'completed') {
+        await swap.save();
+      }
       await swap.populate('sender', 'name avatar');
       await swap.populate('receiver', 'name avatar');
       
@@ -202,6 +228,9 @@ exports.updateSwapStatus = async (req, res) => {
         const { getIO } = require('../sockets/socketServer');
         const io = getIO();
         io.to(`swap-${swap._id}`).emit('swap_updated', swap);
+        if (swap.status === 'completed') {
+          io.emit('swap_completed', swap); // Global event for all clients
+        }
       } catch (socketError) {
         console.error('Socket.IO error:', socketError);
       }

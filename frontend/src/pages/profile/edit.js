@@ -129,7 +129,7 @@ export default function ProfilePage() {
           <div className="flex items-center gap-2">
             <StarIcon className="w-5 h-5 text-yellow-400" />
             <span className="text-lg font-semibold text-gray-700">
-              {user.rating ? `${user.rating.toFixed(1)}` : '0.0'} ({user.completedSwapsCount || 0})
+              {user.rating ? `${user.rating.toFixed(1)}` : 'No ratings.'} ({user.completedSwapsCount || 0})
             </span>
           </div>
         </div>

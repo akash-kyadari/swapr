@@ -95,3 +95,64 @@ exports.updateAllUserStats = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 }; 
+
+// Debug endpoint to check completed swaps count
+exports.debugCompletedSwapsCount = async (req, res) => {
+  try {
+    const Swap = require('../models/Swap');
+    const userId = req.user.id;
+    
+    // Get user's current stored count
+    const user = await User.findById(userId);
+    
+    // Count actual completed swaps
+    const actualCompletedSwaps = await Swap.find({
+      status: 'completed',
+      $or: [
+        { sender: userId },
+        { receiver: userId }
+      ]
+    });
+    
+    const actualCount = actualCompletedSwaps.length;
+    const storedCount = user.completedSwapsCount || 0;
+    
+    res.json({
+      userId,
+      storedCount,
+      actualCount,
+      discrepancy: actualCount - storedCount,
+      completedSwaps: actualCompletedSwaps.map(swap => ({
+        id: swap._id,
+        status: swap.status,
+        sender: swap.sender,
+        receiver: swap.receiver,
+        completedAt: swap.completedAt
+      }))
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}; 
+
+// Force refresh completed swaps count for current user
+exports.forceRefreshCompletedCount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Force update user stats
+    const result = await exports.updateUserStats(userId);
+    
+    // Get updated user
+    const updatedUser = await User.findById(userId).select('-password');
+    
+    res.json({
+      message: 'Completed swaps count refreshed',
+      previousCount: req.body.previousCount || 'unknown',
+      newCount: result.completedSwapsCount,
+      user: updatedUser
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}; 

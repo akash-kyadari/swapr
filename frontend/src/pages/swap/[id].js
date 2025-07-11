@@ -17,16 +17,20 @@ import {
   UserIcon,
   StarIcon,
   ArrowLeftIcon,
+  PaperAirplaneIcon,
+  CheckIcon,
 } from "@heroicons/react/24/outline";
 import {
   CheckCircleIcon as CheckCircleSolid,
   XCircleIcon as XCircleSolid,
 } from "@heroicons/react/24/solid";
+import { formatDate, formatTime } from '../../utils/dateUtils';
 
 export default function SwapDetailPage() {
+  // All hooks at the top, before any logic or returns
   const router = useRouter();
   const { id } = router.query;
-  const { user } = useUserStore();
+  const { user, fetchUser } = useUserStore();
   const { addToast } = useToastStore();
   const [swap, setSwap] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -41,82 +45,35 @@ export default function SwapDetailPage() {
   const [otherUser, setOtherUser] = useState(null);
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const [typingUser, setTypingUser] = useState(null);
+  const [lastSeenBy, setLastSeenBy] = useState({});
+  const typingTimeout = useRef();
 
-  useEffect(() => {
-    if (id) {
-      fetchSwapDetails();
-      fetchMessages();
-      initializeSocket();
-    }
-
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
+  // --- Helper functions for chat date grouping ---
+  const groupMessagesByDate = (messages) => {
+    const groups = [];
+    let lastDate = null;
+    messages.forEach((msg) => {
+      const msgDate = new Date(msg.createdAt);
+      const dateKey = msgDate.toDateString();
+      if (!lastDate || lastDate !== dateKey) {
+        groups.push({ type: 'date', date: msgDate });
+        lastDate = dateKey;
       }
-    };
-  }, [id]);
-
-  // Defensive: If swap.sender or swap.receiver is missing, refetch from API
-  useEffect(() => {
-    if (
-      swap &&
-      (!swap.sender || !swap.receiver) &&
-      id
-    ) {
-      fetchSwapDetails();
-    }
-    // eslint-disable-next-line
-  }, [swap, id]);
-
-
-  const initializeSocket = () => {
-    if (!id || !user) return;
-
-    // Initialize Socket.IO connection
-    socketRef.current = io(process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000', {
-      withCredentials: true,
+      groups.push({ type: 'msg', message: msg });
     });
-
-    socketRef.current.on('connect', () => {
-      console.log('Connected to socket server');
-      // Join the swap room
-      socketRef.current.emit('join_swap_room', { swapId: id, userId: user._id });
-    });
-
-    socketRef.current.on('swap_updated', (updatedSwap) => {
-      setSwap(updatedSwap);
-    });
-
-    socketRef.current.on('new_message', (message) => {
-      console.log('New message received:', message);
-      // Check if message already exists to prevent duplicates
-      setMessages(prev => {
-        const messageExists = prev.some(msg => msg._id === message._id);
-        if (messageExists) {
-          return prev;
-        }
-        return [...prev, message];
-      });
-      scrollToBottom();
-    });
-
-    socketRef.current.on('disconnect', () => {
-      console.log('Disconnected from socket server');
-    });
-
-    socketRef.current.on('error', (error) => {
-      console.error('Socket error:', error);
-    });
+    return groups;
+  };
+  const getDateLabel = (date) => {
+    const now = new Date();
+    const msgDate = new Date(date);
+    const diff = (now.setHours(0,0,0,0) - msgDate.setHours(0,0,0,0)) / 86400000;
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Yesterday';
+    return formatDate(date);
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
+  // --- Move all function definitions here ---
   const fetchSwapDetails = async () => {
     try {
       setLoading(true);
@@ -139,27 +96,56 @@ export default function SwapDetailPage() {
     }
   };
 
+  const initializeSocket = () => {
+    if (!id || !user) return;
+    socketRef.current = io(process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000', {
+      withCredentials: true,
+    });
+    socketRef.current.on('connect', () => {
+      socketRef.current.emit('join_swap_room', { swapId: id, userId: user._id });
+    });
+    socketRef.current.on('swap_updated', (updatedSwap) => {
+      setSwap(updatedSwap);
+    });
+    socketRef.current.on('new_message', (message) => {
+      setMessages(prev => {
+        const messageExists = prev.some(msg => msg._id === message._id);
+        if (messageExists) return prev;
+        return [...prev, message];
+      });
+      scrollToBottom();
+    });
+    socketRef.current.on('disconnect', () => {});
+    socketRef.current.on('error', (error) => {});
+    socketRef.current.on('typing_start', (data) => {
+      if (data.userId !== user._id) setTypingUser(data.userName || 'Partner');
+    });
+    socketRef.current.on('typing_stop', (data) => {
+      if (data.userId !== user._id) setTypingUser(null);
+    });
+    socketRef.current.on('messages_seen', (data) => {
+      fetchMessages();
+    });
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   const markTaskComplete = async () => {
     if (!swap || completingTask) return;
-    
     setCompletingTask(true);
     try {
       const updatedSwap = await apiFetch(`/api/swaps/${id}/status`, {
         method: "PUT",
         body: JSON.stringify({ status: "task_completed" }),
       });
-      
       setSwap(updatedSwap);
       addToast({ message: "Task marked as complete!", type: "swap-success" });
-      
-      // Rating is only available after approval, not after task completion
-      
-      // Emit socket event to notify other user
       if (socketRef.current) {
         socketRef.current.emit('task_completed', { swapId: id, userId: user._id });
       }
     } catch (err) {
-      console.error('Task completion error:', err);
       addToast({ message: "Failed to mark task as complete", type: "swap-error" });
     } finally {
       setCompletingTask(false);
@@ -168,35 +154,31 @@ export default function SwapDetailPage() {
 
   const approveTask = async () => {
     if (!swap || approvingTask) return;
-    
     setApprovingTask(true);
     try {
       const updatedSwap = await apiFetch(`/api/swaps/${id}/status`, {
         method: "PUT",
         body: JSON.stringify({ approval: "approve" }),
       });
-      
       setSwap(updatedSwap);
       addToast({ message: "Task approved!", type: "swap-success" });
-      
-      // If swap is now completed, show review modal only if user can rate
       if (updatedSwap.status === 'completed') {
+        // Refresh user profile to update completedSwapsCount
+        if (typeof fetchUser === 'function') {
+          fetchUser();
+        }
         const isSender = String(updatedSwap.sender._id) === user._id;
         const canRate = isSender ? updatedSwap.senderCanRateReceiver : updatedSwap.receiverCanRateSender;
-        
         if (canRate) {
           const otherUserData = isSender ? updatedSwap.receiver : updatedSwap.sender;
           setOtherUser(otherUserData);
           setShowReviewModal(true);
         }
       }
-      
-      // Emit socket event to notify other user
       if (socketRef.current) {
         socketRef.current.emit('task_approved', { swapId: id, userId: user._id });
       }
     } catch (err) {
-      console.error('Task approval error:', err);
       addToast({ message: "Failed to approve task", type: "swap-error" });
     } finally {
       setApprovingTask(false);
@@ -206,33 +188,23 @@ export default function SwapDetailPage() {
   const handleReviewSubmitted = () => {
     setShowReviewModal(false);
     addToast({ message: "Review submitted successfully!", type: "swap-success" });
-    // Refresh swap data to update rating flags
     fetchSwapDetails();
   };
 
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || sendingMessage || !swap.receiver) return;
-
     setSendingMessage(true);
     try {
       const message = await apiFetch("/api/messages", {
         method: "POST",
-        body: JSON.stringify({
-          swapId: id,
-          content: newMessage.trim(),
-        }),
+        body: JSON.stringify({ swapId: id, content: newMessage.trim() }),
       });
-      
-      // Don't add message to local state here - let the socket event handle it
       setNewMessage("");
-      
-      // Emit socket event to notify other user
       if (socketRef.current) {
         socketRef.current.emit('send_message', { swapId: id, message });
       }
     } catch (err) {
-      console.error('Send message error:', err);
       addToast({ message: "Failed to send message", type: "swap-error" });
     } finally {
       setSendingMessage(false);
@@ -265,6 +237,49 @@ export default function SwapDetailPage() {
     }
   };
 
+  // --- All useEffect hooks below ---
+  useEffect(() => {
+    if (id) {
+      fetchSwapDetails();
+      fetchMessages();
+      initializeSocket();
+    }
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, [id]);
+
+  useEffect(() => {
+    if (
+      swap &&
+      (!swap.sender || !swap.receiver) &&
+      id
+    ) {
+      fetchSwapDetails();
+    }
+    // eslint-disable-next-line
+  }, [swap, id]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    if (!id || !user) return;
+    const markSeen = async () => {
+      await apiFetch(`/api/messages/${id}/seen`, { method: 'PATCH' });
+      if (socketRef.current) {
+        socketRef.current.emit('messages_seen', { swapId: id, userId: user._id });
+      }
+    };
+    markSeen();
+  }, [id, user, messages.length]);
+
+  // Remove the useEffect that auto-opens the review modal
+
+  // Early return for loading/error state, after all hooks
   if (loading || !user || !swap) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -310,6 +325,23 @@ export default function SwapDetailPage() {
       </div>
     );
   }
+
+  // Typing event handlers
+  const handleInputChange = (e) => {
+    setNewMessage(e.target.value);
+    if (socketRef.current) {
+      socketRef.current.emit('typing_start', { swapId: id, userId: user._id, userName: user.name });
+      if (typingTimeout.current) clearTimeout(typingTimeout.current);
+      typingTimeout.current = setTimeout(() => {
+        socketRef.current.emit('typing_stop', { swapId: id, userId: user._id, userName: user.name });
+      }, 1500);
+    }
+  };
+  const handleInputBlur = () => {
+    if (socketRef.current) {
+      socketRef.current.emit('typing_stop', { swapId: id, userId: user._id, userName: user.name });
+    }
+  };
 
   return (
     <>
@@ -367,12 +399,7 @@ export default function SwapDetailPage() {
                     <Avatar src={swap.sender?.avatar} name={swap.sender?.name} size={40} />
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-900 text-sm lg:text-base truncate">{swap.sender?.name || "Anonymous"}</h3>
-                      <div className="flex items-center gap-1 mt-1">
-                        <StarIcon className="w-3 h-3 text-yellow-400" />
-                        <span className="text-xs text-gray-600">
-                          {swap.sender?.rating ? `${swap.sender.rating.toFixed(1)}` : '0.0'} ({swap.sender?.completedSwapsCount || 0})
-                        </span>
-                      </div>
+                      
                       <p className="text-xs lg:text-sm text-gray-600">Proposer</p>
                     </div>
                     {isSender && (
@@ -388,12 +415,7 @@ export default function SwapDetailPage() {
                       <Avatar src={swap.receiver?.avatar} name={swap.receiver?.name} size={40} />
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 text-sm lg:text-base truncate">{swap.receiver?.name || "Anonymous"}</h3>
-                        <div className="flex items-center gap-1 mt-1">
-                          <StarIcon className="w-3 h-3 text-yellow-400" />
-                          <span className="text-xs text-gray-600">
-                            {swap.receiver?.rating ? `${swap.receiver.rating.toFixed(1)}` : '0.0'} ({swap.receiver?.completedSwapsCount || 0})
-                          </span>
-                        </div>
+                        
                         <p className="text-xs lg:text-sm text-gray-600">Acceptor</p>
                       </div>
                       {isReceiver && (
@@ -770,6 +792,10 @@ export default function SwapDetailPage() {
                   <p className="text-sm text-gray-500">
                     {swap.receiver && (swap.status === 'in_progress' || swap.status === 'sender_completed' || swap.status === 'receiver_completed' || swap.status === 'both_completed' || swap.status === 'completed') ? "Chat with your swap partner" : "Chat will be available once swap is accepted"}
                   </p>
+                  {/* Typing Indicator - moved here under chat heading */}
+                  {typingUser && (
+                    <div className="text-xs text-blue-500 mt-1 font-medium animate-pulse">{typingUser} is typing...</div>
+                  )}
                 </div>
                 {/* Mobile Back Button */}
                 <button
@@ -798,27 +824,51 @@ export default function SwapDetailPage() {
                   </div>
                 </div>
               ) : (
-                messages.map((message) => {
+                // Group messages by date
+                groupMessagesByDate(messages).map((item, idx) => {
+                  if (item.type === 'date') {
+                    return (
+                      <div key={'date-' + item.date} className="flex justify-center my-2">
+                        <span className="bg-gray-200 text-gray-700 text-xs px-3 py-1 rounded-full shadow-sm">{getDateLabel(item.date)}</span>
+                      </div>
+                    );
+                  }
+                  const message = item.message;
                   const isOwnMessage = message.sender?._id === user?._id;
+                  const seenByOther = message.seenBy && message.seenBy.some(uid => uid !== user._id);
                   return (
-                    <div key={message._id} className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        isOwnMessage 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-100 text-gray-900'
-                      }`}>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Avatar src={message.sender?.avatar} name={message.sender?.name} size={24} />
-                          <span className="text-sm font-medium">
-                            {isOwnMessage ? 'You' : message.sender?.name}
-                          </span>
-                        </div>
-                        <p className="text-sm">{message.content}</p>
-                        <p className={`text-xs mt-1 ${
-                          isOwnMessage ? 'text-blue-100' : 'text-gray-500'
+                    <div key={message._id} className={`flex flex-col items-${isOwnMessage ? 'end' : 'start'} mb-1`}>
+                      <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`relative max-w-xs lg:max-w-md px-4 py-2 rounded-lg flex flex-col ${
+                          isOwnMessage 
+                            ? 'bg-blue-600 text-white items-end' 
+                            : 'bg-gray-100 text-gray-900 items-start'
                         }`}>
-                          {new Date(message.createdAt).toLocaleTimeString()}
-                        </p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Avatar src={message.sender?.avatar} name={message.sender?.name} size={24} />
+                            <span className="text-sm font-medium">
+                              {isOwnMessage ? 'You' : message.sender?.name}
+                            </span>
+                          </div>
+                          <p className="text-sm break-words whitespace-pre-line">{message.content}</p>
+                        </div>
+                      </div>
+                      {/* Time and status icon outside the bubble */}
+                      <div className={`flex items-center gap-1 mt-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+                        <span className={'text-xs text-gray-600'}>{formatTime(message.createdAt)}</span>
+                        {isOwnMessage && (
+                          <span className="inline-flex items-center align-bottom ml-1">
+                            {!seenByOther ? (
+                              <PaperAirplaneIcon className="w-4 h-4 text-green-800" title="Sent" />
+                            ) : (
+                              <div className="relative w-5 h-4">
+                              <CheckIcon className="absolute w-4 h-4 text-green-800" title="Seen" />
+                              <CheckIcon className="absolute w-4 h-4 text-green-800 left-1" title="Seen" />
+                            </div>
+                            
+                            )}
+                          </span>
+                        )}
                       </div>
                     </div>
                   );
@@ -829,12 +879,13 @@ export default function SwapDetailPage() {
 
             {/* Chat Input - Fixed at bottom */}
             {swap.receiver && (swap.status === 'in_progress' || swap.status === 'sender_completed' || swap.status === 'receiver_completed' || swap.status === 'both_completed' || swap.status === 'completed') && (
-              <div className="border-t border-gray-200 p-4 flex-shrink-0">
+              <div className="border-t border-gray-200 p-4 flex-shrink-0 bg-gray-50">
                 <form onSubmit={sendMessage} className="flex gap-3">
                   <input
                     type="text"
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={handleInputChange}
+                    onBlur={handleInputBlur}
                     placeholder="Type your message..."
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     disabled={sendingMessage}

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Head from "next/head";
 import {
   FireIcon,
@@ -21,6 +21,8 @@ import Loader from "@/components/Loader";
 import useUserStore from "@/store/useUserStore";
 import useToastStore from "@/store/useToastStore";
 import { apiFetch } from "@/utils/api";
+import SwapCard from "@/components/SwapCard";
+import { io } from "socket.io-client";
 
 // --- Enhanced Modal (minimal, compact, professional, minimal color) ---
 function SwapModal({ swap, user, onClose, handleAcceptSwap, acceptingId }) {
@@ -114,12 +116,7 @@ function SwapModal({ swap, user, onClose, handleAcceptSwap, acceptingId }) {
             <h3 className="text-lg font-semibold text-slate-900">
               {swap.sender?.name || "Anonymous"}
             </h3>
-            <div className="flex items-center gap-1 mt-1">
-              <StarIcon className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm text-slate-600">
-                {swap.sender?.rating ? `${swap.sender.rating.toFixed(1)}` : '0.0'} ({swap.sender?.completedSwapsCount || 0})
-              </span>
-            </div>
+            
             <p className="text-slate-600 text-sm">
               {swap.sender?.email || "No email provided"}
             </p>
@@ -371,6 +368,8 @@ export default function SkillsPage() {
   const [swapOffered, setSwapOffered] = useState("");
   const [swapRequested, setSwapRequested] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState({}); // { swapId: count }
+  const socketRef = useRef(null);
 
   // Fetch open swaps
   useEffect(() => {
@@ -390,6 +389,60 @@ export default function SkillsPage() {
     }
     fetchOpenSwaps();
   }, []);
+
+  // Socket setup for real-time swap updates
+  useEffect(() => {
+    if (!socketRef.current) {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      socketRef.current = io(baseUrl, {
+        withCredentials: true,
+        transports: ['websocket', 'polling'],
+        autoConnect: true,
+      });
+    }
+    const socket = socketRef.current;
+    // Add new swap to openSwaps
+    const handleSwapCreated = (swap) => {
+      setOpenSwaps((prev) => {
+        // Only add if not already present
+        if (prev.some((s) => s._id === swap._id)) return prev;
+        return [swap, ...prev];
+      });
+    };
+    // Remove swap from openSwaps on accept or complete
+    const handleSwapRemove = (swap) => {
+      setOpenSwaps((prev) => prev.filter((s) => s._id !== swap._id));
+    };
+    socket.on('swap_created', handleSwapCreated);
+    socket.on('swap_accepted', handleSwapRemove);
+    socket.on('swap_completed', handleSwapRemove);
+    // Cleanup
+    return () => {
+      socket.off('swap_created', handleSwapCreated);
+      socket.off('swap_accepted', handleSwapRemove);
+      socket.off('swap_completed', handleSwapRemove);
+    };
+  }, []);
+
+  // Fetch unread counts for all swaps
+  useEffect(() => {
+    async function fetchUnreadCounts() {
+      if (!user || !openSwaps.length) return;
+      const counts = {};
+      await Promise.all(
+        openSwaps.map(async (swap) => {
+          try {
+            const res = await apiFetch(`/api/messages/${swap._id}/unread-count`);
+            counts[swap._id] = res.unreadCount || 0;
+          } catch {
+            counts[swap._id] = 0;
+          }
+        })
+      );
+      setUnreadCounts(counts);
+    }
+    fetchUnreadCounts();
+  }, [user, openSwaps]);
 
   // Filter swaps based on search and filters
   const filteredSwaps = openSwaps.filter((swap) => {
@@ -650,136 +703,12 @@ export default function SkillsPage() {
                   style={{ margin: 0 }}
                 >
                   {filteredSwaps.map((swap) => (
-                    <div
+                    <SwapCard
                       key={swap._id}
-                      className="
-    transition-all duration-200 hover:scale-[1.02]
-    bg-white border border-slate-200 shadow-sm hover:shadow-lg
-    rounded-2xl flex flex-col p-0
-    group focus:ring-2 focus:ring-blue-400 outline-none
-    justify-between overflow-hidden
-  "
+                      swap={swap}
                       onClick={() => setModalSwap(swap)}
-                      tabIndex={0}
-                      role="button"
-                      aria-label="Open skill details"
-                    >
-                      {/* Top User Info */}
-                      <div className="flex items-center gap-3 mb-2 px-6 pt-6">
-                        <Avatar
-                          src={swap.sender?.avatar}
-                          name={swap.sender?.name}
-                          size={48}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-base text-slate-900 truncate">
-                            {swap.sender?.name || "Anonymous"}
-                          </h3>
-                          <div className="flex items-center gap-1 mt-1">
-                            <StarIcon className="w-4 h-4 text-yellow-400" />
-                            <span className="text-xs text-slate-500">
-                              4.8 (12)
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Skill Tags */}
-                      <div className="space-y-2 mb-2 px-6">
-                        <div>
-                          <div className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">
-                            Offering
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {(Array.isArray(swap.offeredSkill)
-                              ? swap.offeredSkill
-                              : [swap.offeredSkill]
-                            )
-                              .slice(0, 3)
-                              .map((skill) => (
-                                <span
-                                  key={skill}
-                                  className="bg-blue-50 text-blue-800 text-xs px-2 py-1 rounded-full border border-blue-100 font-medium"
-                                >
-                                  {skill}
-                                </span>
-                              ))}
-                            {(Array.isArray(swap.offeredSkill)
-                              ? swap.offeredSkill
-                              : [swap.offeredSkill]
-                            ).length > 3 && (
-                              <span className="text-xs text-slate-400">
-                                +
-                                {(Array.isArray(swap.offeredSkill)
-                                  ? swap.offeredSkill
-                                  : [swap.offeredSkill]
-                                ).length - 3}{" "}
-                                more
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">
-                            Looking for
-                          </div>
-                          <div className="bg-yellow-50 px-3 py-1 rounded-full inline-block border border-yellow-100">
-                            <span className="text-yellow-800 font-medium text-xs">
-                              {swap.requestedSkill}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Message */}
-                      <div className="mb-2 px-6 text-slate-700 text-sm italic line-clamp-2">
-                        {swap.message
-                          ? `"${swap.message}"`
-                          : "No message provided"}
-                      </div>
-
-                      {/* Meta Info */}
-                      <div className="flex items-center justify-between text-xs text-slate-500 mb-2 px-6">
-                        <div className="flex items-center gap-1">
-                          <CalendarIcon className="w-4 h-4" />
-                          {new Date(swap.createdAt).toLocaleDateString()}
-                        </div>
-                        <div
-                          className={`px-2 py-1 rounded-full font-semibold ${
-                            swap.difficultyLevel === "Beginner"
-                              ? "bg-blue-100 text-blue-700"
-                              : swap.difficultyLevel === "Intermediate"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {swap.difficultyLevel || "Intermediate"}
-                        </div>
-                      </div>
-
-                      {/* Urgent Flag */}
-                      {!swap.isUrgent ? null : (
-                        <div className="flex items-center gap-2 text-xs text-red-600 mb-2 px-6 font-medium">
-                          <ExclamationTriangleIcon className="w-4 h-4" />
-                          Urgent
-                        </div>
-                      )}
-
-                      {/* Bottom Time */}
-                      <div className="px-6 pb-4 text-xs text-slate-400 flex items-center gap-2">
-                        {!swap.isUrgent ? (
-                          <>
-                            <ClockIcon className="w-4 h-4" />
-                            {swap.createdAt &&
-                              new Date(swap.createdAt).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                          </>
-                        ) : null}
-                      </div>
-                    </div>
+                      unreadCount={unreadCounts[swap._id] || 0}
+                    />
                   ))}
                 </div>
               </div>

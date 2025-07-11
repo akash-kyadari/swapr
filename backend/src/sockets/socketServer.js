@@ -146,6 +146,13 @@ const initializeSocket = (server) => {
       socket.to(`swap-${swapId}`).emit('new_message', message);
     });
 
+    // Handle message seen events
+    socket.on('messages_seen', (data) => {
+      const { swapId, userId } = data;
+      // Notify other user(s) in the room that messages have been seen by this user
+      socket.to(`swap-${swapId}`).emit('messages_seen', { swapId, userId });
+    });
+
     socket.on('disconnect', () => {
       console.log(`User disconnected: ${socket.userId}`);
     });

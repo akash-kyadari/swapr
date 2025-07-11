@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Head from "next/head";
 import Button from "../components/Button";
 import Input from "../components/Input";
@@ -25,6 +25,7 @@ import {
 import { useRouter } from "next/router";
 import SwapCard from "../components/SwapCard";
 import PendingSwapModal from "../components/PendingSwapModal";
+import { initializeSocket, getSocket } from '../utils/socket';
 
 function CreateSwapModal({ user, open, onClose, onSwapCreated }) {
   const { addToast } = useToastStore();
@@ -132,7 +133,7 @@ function CreateSwapModal({ user, open, onClose, onSwapCreated }) {
             </p>
             <a
               href="/profile/edit"
-              className="inline-block px-6 py-3 bg-primary-600 text-white rounded-xl font-semibold shadow hover:bg-primary-700 transition"
+              className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold shadow hover:bg-primary-700 transition"
             >
               Go to Profile & Add Skills
             </a>
@@ -454,7 +455,7 @@ function SwapModal({ swap, user, onClose }) {
     typeof window !== "undefined" ? document.body : null
   );
 }
-export function AcceptedSwapCard({ swap }) {
+export function AcceptedSwapCard({ swap, unreadCount }) {
   const router = useRouter();
 
   const handleClick = () => {
@@ -464,8 +465,14 @@ export function AcceptedSwapCard({ swap }) {
   return (
     <div
       onClick={handleClick}
-      className="cursor-pointer bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 space-y-5 group"
+      className="cursor-pointer bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 space-y-5 group relative"
     >
+      {/* Unread Badge for Receiver */}
+      {unreadCount > 0 && (
+        <span className="absolute top-4 right-6 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5 shadow-md z-10 border-2 border-white">
+          {unreadCount > 99 ? '99+' : unreadCount}
+        </span>
+      )}
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
@@ -490,12 +497,6 @@ export function AcceptedSwapCard({ swap }) {
             <p className="mt-2 text-sm font-medium text-gray-800">
               {user.name}
             </p>
-            <div className="flex items-center gap-1 mt-1">
-              <StarIcon className="w-3 h-3 text-yellow-400" />
-              <span className="text-xs text-gray-500">
-                {user.rating ? `${user.rating.toFixed(1)}` : '0.0'} ({user.completedSwapsCount || 0})
-              </span>
-            </div>
             <p className="text-xs text-gray-500">
               {i === 0 ? "Proposer" : "Acceptor"}
             </p>
@@ -656,12 +657,6 @@ export function CompletedSwapCard({ swap }) {
             <p className="mt-2 text-sm font-medium text-gray-800">
               {user.name}
             </p>
-            <div className="flex items-center gap-1 mt-1">
-              <StarIcon className="w-3 h-3 text-yellow-400" />
-              <span className="text-xs text-gray-500">
-                {user.rating ? `${user.rating.toFixed(1)}` : '0.0'} ({user.completedSwapsCount || 0})
-              </span>
-            </div>
             <p className="text-xs text-gray-500">
               {i === 0 ? "Proposer" : "Acceptor"}
             </p>
@@ -764,7 +759,7 @@ export function CompletedSwapCard({ swap }) {
 }
 
 export default function Swap() {
-  const { user, loading: userLoading } = useUserStore();
+  const { user, loading: userLoading, fetchUser } = useUserStore();
   const { addToast } = useToastStore();
   const [swaps, setSwaps] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -774,7 +769,31 @@ export default function Swap() {
   const [acceptedSwaps, setAcceptedSwaps] = useState([]);
   const [completedSwaps, setCompletedSwaps] = useState([]);
   const [pendingModalSwap, setPendingModalSwap] = useState(null);
+  const [unreadCounts, setUnreadCounts] = useState({}); // { swapId: count }
   const router = useRouter();
+  const socketRef = useRef(null);
+
+  const fetchUnreadCounts = async () => {
+    if (!user || !swaps.length) return;
+    const counts = {};
+    await Promise.all(
+      swaps
+        .filter(
+          (swap) =>
+            ["in_progress", "sender_completed", "receiver_completed", "both_completed"].includes(swap.status) &&
+            (swap.sender?._id === user._id || swap.receiver?._id === user._id)
+        )
+        .map(async (swap) => {
+          try {
+            const res = await apiFetch(`/api/messages/${swap._id}/unread-count`);
+            counts[swap._id] = res.unreadCount || 0;
+          } catch {
+            counts[swap._id] = 0;
+          }
+        })
+    );
+    setUnreadCounts(counts);
+  };
 
   useEffect(() => {
     async function fetchSwaps() {
@@ -797,6 +816,10 @@ export default function Swap() {
     }
     fetchSwaps();
   }, [addToast]);
+
+  useEffect(() => {
+    fetchUnreadCounts();
+  }, [user, swaps]);
 
   useEffect(() => {
     async function fetchAcceptedSwaps() {
@@ -822,7 +845,10 @@ export default function Swap() {
         completedSwapsCount: user.completedSwapsCount
       }
     };
-    setSwaps((prev) => [swapWithUserData, ...prev]);
+    setSwaps((prev) => {
+      if (prev.some((s) => s._id === swapWithUserData._id)) return prev;
+      return [swapWithUserData, ...prev];
+    });
   };
 
   // Split swaps into active and pending
@@ -832,6 +858,79 @@ export default function Swap() {
     )
   );
   const pendingSwaps = swaps.filter((swap) => swap.status === "pending");
+
+  // Socket setup for real-time unread badge updates and swap status
+  useEffect(() => {
+    if (!user) return;
+    if (!socketRef.current) {
+      socketRef.current = initializeSocket();
+    }
+    const socket = socketRef.current;
+    // Join all active swap rooms where user is sender OR receiver
+    const userActiveSwaps = swaps.filter(
+      (swap) =>
+        ["in_progress", "sender_completed", "receiver_completed", "both_completed"].includes(swap.status) &&
+        (swap.sender?._id === user._id || swap.receiver?._id === user._id)
+    );
+    userActiveSwaps.forEach((swap) => {
+      socket.emit('join_swap_room', { swapId: swap._id, userId: user._id });
+    });
+    // Handler to refresh unread counts
+    const refreshUnreadCounts = () => {
+      fetchUnreadCounts();
+    };
+    // Listen for new_message and messages_seen events
+    socket.on('new_message', refreshUnreadCounts);
+    socket.on('messages_seen', refreshUnreadCounts);
+
+    // Real-time swap status updates
+    const handleSwapAccepted = (swap) => {
+      // If user is sender or receiver, add to activeSwaps and remove from pending
+      if (swap.sender?._id === user._id || swap.receiver?._id === user._id) {
+        setSwaps((prev) => {
+          // Remove from pending if present, add to active if not present
+          const filtered = prev.filter((s) => s._id !== swap._id);
+          return [swap, ...filtered];
+        });
+      }
+    };
+    const handleSwapCompleted = (swap) => {
+      // If user is sender or receiver, move to completedSwaps and remove from active
+      if (swap.sender?._id === user._id || swap.receiver?._id === user._id) {
+        setCompletedSwaps((prev) => {
+          if (prev.some((s) => s._id === swap._id)) return prev;
+          return [swap, ...prev];
+        });
+        setSwaps((prev) => prev.filter((s) => s._id !== swap._id));
+        // Refresh user profile to update completedSwapsCount
+        if (typeof fetchUser === 'function') fetchUser();
+      }
+    };
+    // Optionally, listen for swap_created to update pending swaps if user is sender
+    const handleSwapCreated = (swap) => {
+      if (swap.sender?._id === user._id) {
+        setSwaps((prev) => {
+          if (prev.some((s) => s._id === swap._id)) return prev;
+          return [swap, ...prev];
+        });
+      }
+    };
+    socket.on('swap_accepted', handleSwapAccepted);
+    socket.on('swap_completed', handleSwapCompleted);
+    socket.on('swap_created', handleSwapCreated);
+    // Cleanup
+    return () => {
+      socket.off('new_message', refreshUnreadCounts);
+      socket.off('messages_seen', refreshUnreadCounts);
+      socket.off('swap_accepted', handleSwapAccepted);
+      socket.off('swap_completed', handleSwapCompleted);
+      socket.off('swap_created', handleSwapCreated);
+      userActiveSwaps.forEach((swap) => {
+        socket.emit('leave_swap_room', { swapId: swap._id, userId: user._id });
+      });
+    };
+    // eslint-disable-next-line
+  }, [user, swaps]);
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col">
@@ -860,6 +959,7 @@ export default function Swap() {
                   key={swap._id}
                   swap={swap}
                   onClick={() => router.push(`/swap/${swap._id}`)}
+                  unreadCount={unreadCounts[swap._id] || 0}
                 />
               ))}
             </div>

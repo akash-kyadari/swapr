@@ -6,15 +6,21 @@ import {
   ClockIcon,
 } from "@heroicons/react/24/outline";
 
-export default function SwapCard({ swap, onClick }) {
+export default function SwapCard({ swap, onClick, unreadCount }) {
   return (
     <div
-      className="transition-all duration-200 hover:scale-[1.02] bg-white border border-slate-200 shadow-sm hover:shadow-lg rounded-2xl flex flex-col p-0 group focus:ring-2 focus:ring-blue-400 outline-none justify-between overflow-hidden cursor-pointer"
+      className="transition-all duration-200 hover:scale-[1.02] bg-white border border-slate-200 shadow-sm hover:shadow-lg rounded-2xl flex flex-col p-0 group focus:ring-2 focus:ring-blue-400 outline-none justify-between overflow-hidden cursor-pointer relative"
       onClick={onClick}
       tabIndex={0}
       role="button"
       aria-label="Open swap details"
     >
+      {/* Unread Badge */}
+      {unreadCount > 0 && (
+        <span className="absolute top-4 right-6 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5 shadow-md z-10 border-2 border-white">
+          {unreadCount > 99 ? '99+' : unreadCount}
+        </span>
+      )}
       {/* Top User Info */}
       <div className="flex items-center gap-3 mb-2 px-6 pt-6">
         <Avatar src={swap.sender?.avatar} name={swap.sender?.name} size={48} />
@@ -22,12 +28,7 @@ export default function SwapCard({ swap, onClick }) {
           <h3 className="font-semibold text-base text-slate-900 truncate">
             {swap.sender?.name || "Anonymous"}
           </h3>
-          <div className="flex items-center gap-1 mt-1">
-            <StarIcon className="w-4 h-4 text-yellow-400" />
-            <span className="text-xs text-slate-500">
-              {swap.sender?.rating ? `${swap.sender.rating.toFixed(1)}` : '0.0'} ({swap.sender?.completedSwapsCount || 0})
-            </span>
-          </div>
+          
         </div>
       </div>
       {/* Skill Tags */}

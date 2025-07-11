@@ -113,3 +113,59 @@ exports.getUserSwapsWithMessages = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch swaps with messages' });
   }
 }; 
+
+// Mark all messages in a swap as seen by the current user
+exports.markMessagesAsSeen = async (req, res) => {
+  try {
+    const { swapId } = req.params;
+    const userId = req.user.id;
+
+    // Check if swap exists and user is part of it
+    const swap = await Swap.findById(swapId);
+    if (!swap) {
+      return res.status(404).json({ message: 'Swap not found' });
+    }
+    if (swap.sender.toString() !== userId && swap.receiver.toString() !== userId) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    // Update all messages in this swap not yet seen by this user
+    await Message.updateMany(
+      { swap: swapId, seenBy: { $ne: userId } },
+      { $addToSet: { seenBy: userId } }
+    );
+
+    // Return updated messages
+    const messages = await Message.find({ swap: swapId })
+      .populate('sender', 'name avatar')
+      .sort('createdAt');
+    res.json(messages);
+  } catch (err) {
+    console.error('Mark messages as seen error:', err);
+    res.status(500).json({ message: 'Failed to mark messages as seen' });
+  }
+};
+
+// Get unread message count for a swap for the current user
+exports.getUnreadCount = async (req, res) => {
+  try {
+    const { swapId } = req.params;
+    const userId = req.user.id;
+
+    // Check if swap exists and user is part of it
+    const swap = await Swap.findById(swapId);
+    if (!swap) {
+      return res.status(404).json({ message: 'Swap not found' });
+    }
+    if (swap.sender.toString() !== userId && swap.receiver.toString() !== userId) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    // Count messages not seen by this user
+    const unreadCount = await Message.countDocuments({ swap: swapId, seenBy: { $ne: userId } });
+    res.json({ unreadCount });
+  } catch (err) {
+    console.error('Get unread count error:', err);
+    res.status(500).json({ message: 'Failed to get unread count' });
+  }
+}; 

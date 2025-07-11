@@ -13,5 +13,7 @@ router.put('/me', auth, upload.single('avatar'), userController.updateProfile);
 router.get('/:id', userController.getUserById);
 // Update all users' stats (admin function)
 router.post('/update-stats', userController.updateAllUserStats);
+// Debug endpoint to check completed swaps count
+router.get('/debug-completed-count', auth, userController.debugCompletedSwapsCount);
 
 module.exports = router; 

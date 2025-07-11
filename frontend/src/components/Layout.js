@@ -2,10 +2,13 @@ import Navigation from "./Navigation";
 import { useRouter } from "next/router";
 import useUserStore from "../store/useUserStore";
 import LoginPrompt from "./LoginPrompt";
+import { useEffect, useRef } from "react";
+import { initializeSocket } from "../utils/socket";
 
 export default function Layout({ children }) {
   const router = useRouter();
-  const { user, loading: userLoading } = useUserStore();
+  const { user, loading: userLoading, fetchUser } = useUserStore();
+  const socketRef = useRef(null);
   const isMessagesPage = router.pathname === "/messages";
   const isSkillsPage = router.pathname === "/skills";
   const isSwapPage = router.pathname === "/swap";
@@ -14,6 +17,25 @@ export default function Layout({ children }) {
     !userLoading &&
     !user &&
     (router.pathname === "/swap" || router.pathname === "/messages");
+
+  useEffect(() => {
+    if (!user) return;
+    if (!socketRef.current) {
+      socketRef.current = initializeSocket();
+    }
+    const socket = socketRef.current;
+    // Listen for swap_completed event globally
+    const handleSwapCompleted = () => {
+      if (typeof fetchUser === 'function') fetchUser();
+    };
+    socket.on('swap_completed', handleSwapCompleted);
+    // Also listen for swap_completed in case backend emits swap_completed instead of swap_completed
+    socket.on('swap_completed', handleSwapCompleted);
+    // Cleanup
+    return () => {
+      socket.off('swap_completed', handleSwapCompleted);
+    };
+  }, [user, fetchUser]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col">
