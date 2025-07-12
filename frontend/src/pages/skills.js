@@ -393,7 +393,7 @@ export default function SkillsPage() {
   // Socket setup for real-time swap updates
   useEffect(() => {
     if (!socketRef.current) {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
       socketRef.current = io(baseUrl, {
         withCredentials: true,
         transports: ['websocket', 'polling'],

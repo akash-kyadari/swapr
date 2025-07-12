@@ -98,7 +98,7 @@ export default function SwapDetailPage() {
 
   const initializeSocket = () => {
     if (!id || !user) return;
-    socketRef.current = io(process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000', {
+    socketRef.current = io(process.env.NEXT_PUBLIC_API_URL, {
       withCredentials: true,
     });
     socketRef.current.on('connect', () => {
@@ -162,18 +162,19 @@ export default function SwapDetailPage() {
       });
       setSwap(updatedSwap);
       addToast({ message: "Task approved!", type: "swap-success" });
-      if (updatedSwap.status === 'completed') {
-        // Refresh user profile to update completedSwapsCount
-        if (typeof fetchUser === 'function') {
-          fetchUser();
-        }
-        const isSender = String(updatedSwap.sender._id) === user._id;
-        const canRate = isSender ? updatedSwap.senderCanRateReceiver : updatedSwap.receiverCanRateSender;
-        if (canRate) {
-          const otherUserData = isSender ? updatedSwap.receiver : updatedSwap.sender;
-          setOtherUser(otherUserData);
-          setShowReviewModal(true);
-        }
+      // Always fetch the latest swap details after approval
+      await fetchSwapDetails();
+      // Use the latest swap state for canRate logic
+      const latestSwap = await apiFetch(`/api/swaps/${id}`);
+      const isSender = String(latestSwap.sender._id) === user._id;
+      const canRate = isSender ? latestSwap.senderCanRateReceiver : latestSwap.receiverCanRateSender;
+      if (
+        (latestSwap.status === 'completed' || latestSwap.status === 'both_completed') &&
+        canRate
+      ) {
+        const otherUserData = isSender ? latestSwap.receiver : latestSwap.sender;
+        setOtherUser(otherUserData);
+        setShowReviewModal(true);
       }
       if (socketRef.current) {
         socketRef.current.emit('task_approved', { swapId: id, userId: user._id });
@@ -683,7 +684,7 @@ export default function SwapDetailPage() {
                     </div>
                   </div>
                   
-                  {swap.status === "completed" && (
+                  {(swap.status === "completed" || swap.status === "both_completed") && (
                     <div className="mt-3 pt-3 border-t border-gray-200">
                       <div className="flex items-center gap-2">
                         <CheckCircleSolid className="w-4 h-4 lg:w-5 lg:h-5 text-green-600" />

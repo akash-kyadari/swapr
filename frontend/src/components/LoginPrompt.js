@@ -11,7 +11,7 @@ export default function LoginPrompt({ title = "Login Required", message = "Pleas
     <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 border border-gray-200 mx-auto animate-fade-in">
         {/* Icon */}
         <div className="flex justify-center mb-6">
-          <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center shadow-lg">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-700 rounded-full flex items-center justify-center shadow-lg">
             <LockClosedIcon className="w-10 h-10 text-white" />
           </div>
         </div>
@@ -26,7 +26,7 @@ export default function LoginPrompt({ title = "Login Required", message = "Pleas
         <div className="space-y-4">
           <Link
             href="/auth/login"
-            className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 text-lg"
+            className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-[#1c398e] to-indigo-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 text-lg"
           >
             <UserCircleIcon className="w-5 h-5" />
             Login to Continue

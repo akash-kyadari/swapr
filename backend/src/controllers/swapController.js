@@ -216,10 +216,8 @@ exports.updateSwapStatus = async (req, res) => {
         }
       }
 
-      // Only save if swap wasn't already saved (i.e., if it wasn't completed)
-      if (swap.status !== 'completed') {
-        await swap.save();
-      }
+      // Always save the swap after setting canRate flag
+      await swap.save();
       await swap.populate('sender', 'name avatar');
       await swap.populate('receiver', 'name avatar');
       

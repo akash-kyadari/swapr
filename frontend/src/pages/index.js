@@ -83,11 +83,11 @@ export default function Home() {
       <section className="text-center space-y-10">
         <div className="space-y-6">
           <h1 className="text-5xl md:text-6xl font-bold leading-tight">
-            <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#1c398e] via-indigo-600 to-[#1c398e] bg-clip-text text-transparent">
               Swap Skills,
             </span>
             <br />
-            <span className="text-slate-900">Build Connections</span>
+            <span className="text-gray-800">Build Connections</span>
           </h1>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
             Connect with talented professionals, exchange expertise, and

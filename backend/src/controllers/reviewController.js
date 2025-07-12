@@ -13,7 +13,7 @@ exports.createReview = async (req, res) => {
       return res.status(404).json({ message: 'Swap not found' });
     }
     
-    if (swap.status !== 'completed') {
+    if (swap.status !== 'completed' && swap.status !== 'both_completed') {
       return res.status(400).json({ message: 'Can only review completed swaps' });
     }
     
