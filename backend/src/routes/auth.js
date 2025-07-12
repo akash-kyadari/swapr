@@ -15,7 +15,10 @@ router.get('/google/debug', (req, res) => {
     clientIdLength: process.env.GOOGLE_CLIENT_ID?.length || 0,
     clientSecretLength: process.env.GOOGLE_CLIENT_SECRET?.length || 0,
     frontendUrl: process.env.FRONTEND_URL,
-    nodeEnv: process.env.NODE_ENV
+    nodeEnv: process.env.NODE_ENV,
+    callbackUrl: process.env.GOOGLE_CALLBACK_URL || (process.env.NODE_ENV === 'production' 
+      ? 'https://swapr.onrender.com/api/auth/google/callback'
+      : 'http://localhost:5000/api/auth/google/callback')
   });
 });
 
@@ -24,19 +27,28 @@ router.get('/google', (req, res, next) => {
   
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
     console.error('Google OAuth credentials missing');
-    return res.redirect(`${process.env.FRONTEND_URL }'}/auth/login?error=google_config_missing`);
+    return res.redirect(`${process.env.FRONTEND_URL}/auth/login?error=google_config_missing`);
   }
   
-  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+  passport.authenticate('google', { 
+    scope: ['profile', 'email'],
+    accessType: 'offline',
+    prompt: 'consent'
+  })(req, res, next);
 });
 
 router.get('/google/callback', 
   passport.authenticate('google', { 
     session: false, 
-    failureRedirect: `${process.env.FRONTEND_URL }/auth/login?error=google_auth_failed` 
+    failureRedirect: `${process.env.FRONTEND_URL}/auth/login?error=google_auth_failed` 
   }), 
   (req, res) => {
     try {
+      
+      if (!req.user) {
+        console.error('No user found in Google OAuth callback');
+        return res.redirect(`${process.env.FRONTEND_URL}/auth/login?error=no_user_found`);
+      }
       
       // Generate JWT and set cookie
       const { signToken } = require('../utils/jwt');
@@ -44,17 +56,17 @@ router.get('/google/callback',
       
       res.cookie('token', token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: true,
+        sameSite: 'none',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         path: '/',
       });
       
       // Redirect to frontend
-      res.redirect(`${process.env.FRONTEND_URL }/`);
+      res.redirect(`${process.env.FRONTEND_URL}/`);
     } catch (error) {
       console.error('Google OAuth callback error:', error);
-      res.redirect(`${process.env.FRONTEND_URL }/auth/login?error=token_generation_failed`);
+      res.redirect(`${process.env.FRONTEND_URL}/auth/login?error=token_generation_failed`);
     }
   }
 );

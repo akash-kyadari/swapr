@@ -19,6 +19,7 @@ CLOUDINARY_API_SECRET=your_api_secret
 # Google OAuth
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_CALLBACK_URL=https://swapr.onrender.com/api/auth/google/callback
 
 # URLs
 FRONTEND_URL=https://your-frontend-domain.com
