@@ -9,7 +9,7 @@ let io;
 const initializeSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+      origin: process.env.FRONTEND_URL ,
       credentials: true,
     },
   });
@@ -42,7 +42,6 @@ const initializeSocket = (server) => {
   });
 
   io.on('connection', (socket) => {
-    console.log(`User connected: ${socket.userId}`);
 
     // Join swap room for real-time messaging
     socket.on('join_swap_room', async (data) => {
@@ -59,7 +58,6 @@ const initializeSocket = (server) => {
         });
       }
       
-      console.log(`User ${userId} joined swap room: ${swapId}`);
     });
 
     // Leave swap room
@@ -77,13 +75,11 @@ const initializeSocket = (server) => {
         });
       }
       
-      console.log(`User ${userId} left swap room: ${swapId}`);
     });
 
     // Handle typing indicators
     socket.on('typing_start', (data) => {
       const { swapId, userId, userName } = data;
-      console.log(`User ${userName} started typing in swap ${swapId}`);
       socket.to(`swap-${swapId}`).emit('typing_start', {
         swapId,
         userId,
@@ -93,7 +89,6 @@ const initializeSocket = (server) => {
 
     socket.on('typing_stop', (data) => {
       const { swapId, userId, userName } = data;
-      console.log(`User ${userName} stopped typing in swap ${swapId}`);
       socket.to(`swap-${swapId}`).emit('typing_stop', {
         swapId,
         userId,
@@ -104,7 +99,6 @@ const initializeSocket = (server) => {
     // Handle task completion
     socket.on('task_completed', async (data) => {
       const { swapId, userId } = data;
-      console.log(`Task completed in swap ${swapId} by user ${userId}`);
       
       try {
         // Fetch updated swap data
@@ -123,7 +117,6 @@ const initializeSocket = (server) => {
     // Handle task approval
     socket.on('task_approved', async (data) => {
       const { swapId, userId } = data;
-      console.log(`Task approved in swap ${swapId} by user ${userId}`);
       
       try {
         // Fetch updated swap data
@@ -142,7 +135,6 @@ const initializeSocket = (server) => {
     // Handle message sending
     socket.on('send_message', (data) => {
       const { swapId, message } = data;
-      console.log(`Message sent in swap ${swapId}`);
       socket.to(`swap-${swapId}`).emit('new_message', message);
     });
 
@@ -154,7 +146,6 @@ const initializeSocket = (server) => {
     });
 
     socket.on('disconnect', () => {
-      console.log(`User disconnected: ${socket.userId}`);
     });
   });
 

@@ -5,10 +5,11 @@ const { getIO } = require('../sockets/socketServer');
 exports.sendMessage = async (req, res) => {
   try {
     const { swapId, content } = req.body;
+    const userId = req.user?.id;
     
     // Validate input
-    if (!swapId || !content || !content.trim()) {
-      return res.status(400).json({ message: 'Swap ID and message content are required' });
+    if (!swapId || !content || !content.trim() || !userId) {
+      return res.status(400).json({ message: 'Swap ID, message content, and user authentication are required' });
     }
 
     // Check if swap exists and user is part of it
@@ -22,14 +23,22 @@ exports.sendMessage = async (req, res) => {
       return res.status(403).json({ message: 'Can only message active swaps' });
     }
 
+    // Add null checks for sender and receiver
+    const senderId = swap.sender?.toString();
+    const receiverId = swap.receiver?.toString();
+    
+    if (!senderId || !receiverId) {
+      return res.status(400).json({ message: 'Invalid swap data' });
+    }
+
     // Check if user is part of this swap
-    if (swap.sender.toString() !== req.user.id && swap.receiver.toString() !== req.user.id) {
+    if (senderId !== userId && receiverId !== userId) {
       return res.status(403).json({ message: 'Not authorized to message this swap' });
     }
 
     const message = await Message.create({
       swap: swapId,
-      sender: req.user.id,
+      sender: userId,
       content: content.trim(),
     });
 
@@ -55,6 +64,12 @@ exports.sendMessage = async (req, res) => {
 exports.getMessages = async (req, res) => {
   try {
     const { swapId } = req.params;
+    const userId = req.user?.id;
+    
+    // Validate inputs
+    if (!swapId || !userId) {
+      return res.status(400).json({ message: 'Missing required parameters' });
+    }
     
     // Check if swap exists and user is part of it
     const swap = await Swap.findById(swapId);
@@ -62,8 +77,16 @@ exports.getMessages = async (req, res) => {
       return res.status(404).json({ message: 'Swap not found' });
     }
 
+    // Add null checks for sender and receiver
+    const senderId = swap.sender?.toString();
+    const receiverId = swap.receiver?.toString();
+    
+    if (!senderId || !receiverId) {
+      return res.status(400).json({ message: 'Invalid swap data' });
+    }
+
     // Check if user is part of this swap
-    if (swap.sender.toString() !== req.user.id && swap.receiver.toString() !== req.user.id) {
+    if (senderId !== userId && receiverId !== userId) {
       return res.status(403).json({ message: 'Not authorized to view messages for this swap' });
     }
 
@@ -118,14 +141,28 @@ exports.getUserSwapsWithMessages = async (req, res) => {
 exports.markMessagesAsSeen = async (req, res) => {
   try {
     const { swapId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user?.id;
+
+    // Validate inputs
+    if (!swapId || !userId) {
+      return res.status(400).json({ message: 'Missing required parameters' });
+    }
 
     // Check if swap exists and user is part of it
     const swap = await Swap.findById(swapId);
     if (!swap) {
       return res.status(404).json({ message: 'Swap not found' });
     }
-    if (swap.sender.toString() !== userId && swap.receiver.toString() !== userId) {
+
+    // Add null checks for sender and receiver
+    const senderId = swap.sender?.toString();
+    const receiverId = swap.receiver?.toString();
+    
+    if (!senderId || !receiverId) {
+      return res.status(400).json({ message: 'Invalid swap data' });
+    }
+
+    if (senderId !== userId && receiverId !== userId) {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
@@ -150,19 +187,37 @@ exports.markMessagesAsSeen = async (req, res) => {
 exports.getUnreadCount = async (req, res) => {
   try {
     const { swapId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user?.id;
+
+    // Validate inputs
+    if (!swapId || !userId) {
+      return res.status(400).json({ message: 'Missing required parameters' });
+    }
 
     // Check if swap exists and user is part of it
     const swap = await Swap.findById(swapId);
     if (!swap) {
       return res.status(404).json({ message: 'Swap not found' });
     }
-    if (swap.sender.toString() !== userId && swap.receiver.toString() !== userId) {
+
+    // Add null checks for sender and receiver
+    const senderId = swap.sender?.toString();
+    const receiverId = swap.receiver?.toString();
+    
+    if (!senderId || !receiverId) {
+      return res.status(400).json({ message: 'Invalid swap data' });
+    }
+
+    if (senderId !== userId && receiverId !== userId) {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
     // Count messages not seen by this user
-    const unreadCount = await Message.countDocuments({ swap: swapId, seenBy: { $ne: userId } });
+    const unreadCount = await Message.countDocuments({ 
+      swap: swapId, 
+      seenBy: { $ne: userId } 
+    });
+    
     res.json({ unreadCount });
   } catch (err) {
     console.error('Get unread count error:', err);

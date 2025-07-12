@@ -25,12 +25,7 @@ passport.use(new GoogleStrategy({
   callbackURL: '/api/auth/google/callback',
 }, async (accessToken, refreshToken, profile, done) => {
   try {
-    console.log('Google OAuth profile:', {
-      id: profile.id,
-      displayName: profile.displayName,
-      email: profile.emails?.[0]?.value,
-      hasPhoto: !!profile.photos?.[0]?.value
-    });
+   
 
     if (!profile.emails || !profile.emails[0]) {
       return done(new Error('Email is required for Google OAuth'), null);
@@ -58,8 +53,6 @@ passport.use(new GoogleStrategy({
         });
       }
     }
-
-    console.log('Google OAuth user found/created:', user._id);
     return done(null, user);
   } catch (err) {
     console.error('Google OAuth error:', err);

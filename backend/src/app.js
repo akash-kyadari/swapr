@@ -11,10 +11,9 @@ const passport = require('./config/passport');
 const app = express();
 
 // Middleware
-console.log('CORS origin:', process.env.FRONTEND_URL || 'http://localhost:3000');
-console.log('NODE_ENV:', process.env.NODE_ENV);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL ,
   credentials: true,
 }));
 app.use(express.json());

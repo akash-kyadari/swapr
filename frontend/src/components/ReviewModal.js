@@ -52,18 +52,7 @@ export default function ReviewModal({ swap, otherUser, onClose, onReviewSubmitte
     // If current user is receiver, they can rate sender if receiverCanRateSender is true
     const canRateResult = isCurrentUserSender ? swap.senderCanRateReceiver : swap.receiverCanRateSender;
     
-    console.log('Rating Debug:', {
-      swapId: swap._id,
-      swapStatus: swap.status,
-      otherUserId: otherUser._id,
-      senderId: swap.sender._id,
-      receiverId: swap.receiver._id,
-      isCurrentUserSender,
-      senderCanRateReceiver: swap.senderCanRateReceiver,
-      receiverCanRateSender: swap.receiverCanRateSender,
-      canRateResult,
-      existingReview: !!existingReview
-    });
+   
     
     return canRateResult;
   };

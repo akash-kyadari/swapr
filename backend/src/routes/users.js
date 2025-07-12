@@ -15,5 +15,7 @@ router.get('/:id', userController.getUserById);
 router.post('/update-stats', userController.updateAllUserStats);
 // Debug endpoint to check completed swaps count
 router.get('/debug-completed-count', auth, userController.debugCompletedSwapsCount);
+// Force refresh current user's stats
+router.post('/refresh-stats', auth, userController.forceRefreshCompletedCount);
 
 module.exports = router; 

@@ -21,16 +21,10 @@ router.get('/google/debug', (req, res) => {
 
 // Google OAuth
 router.get('/google', (req, res, next) => {
-  console.log('Google OAuth initiated');
-  console.log('Environment check:', {
-    hasClientId: !!process.env.GOOGLE_CLIENT_ID,
-    hasClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
-    frontendUrl: process.env.FRONTEND_URL
-  });
   
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
     console.error('Google OAuth credentials missing');
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login?error=google_config_missing`);
+    return res.redirect(`${process.env.FRONTEND_URL }'}/auth/login?error=google_config_missing`);
   }
   
   passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
@@ -39,11 +33,10 @@ router.get('/google', (req, res, next) => {
 router.get('/google/callback', 
   passport.authenticate('google', { 
     session: false, 
-    failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login?error=google_auth_failed` 
+    failureRedirect: `${process.env.FRONTEND_URL }/auth/login?error=google_auth_failed` 
   }), 
   (req, res) => {
     try {
-      console.log('Google OAuth callback successful for user:', req.user._id);
       
       // Generate JWT and set cookie
       const { signToken } = require('../utils/jwt');
@@ -58,10 +51,10 @@ router.get('/google/callback',
       });
       
       // Redirect to frontend
-      res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/`);
+      res.redirect(`${process.env.FRONTEND_URL }/`);
     } catch (error) {
       console.error('Google OAuth callback error:', error);
-      res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login?error=token_generation_failed`);
+      res.redirect(`${process.env.FRONTEND_URL }/auth/login?error=token_generation_failed`);
     }
   }
 );

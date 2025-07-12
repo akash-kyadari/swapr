@@ -14,6 +14,7 @@ import {
 import useUserStore from "../store/useUserStore";
 import useToastStore from '../store/useToastStore';
 import Avatar from "./Avatar";
+import LogLogo from "./Logo";
 export default function Navigation() {
   const { user, logout } = useUserStore();
   const { addToast } = useToastStore();
@@ -32,9 +33,9 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              SkillSwap
-            </h1>
+            <Link href="/">
+              <LogLogo size={60} />
+            </Link>
           </div>
 
           {/* Desktop Navigation */}

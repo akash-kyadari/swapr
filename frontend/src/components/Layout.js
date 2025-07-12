@@ -1,4 +1,5 @@
 import Navigation from "./Navigation";
+import Footer from "./Footer";
 import { useRouter } from "next/router";
 import useUserStore from "../store/useUserStore";
 import LoginPrompt from "./LoginPrompt";
@@ -71,18 +72,7 @@ export default function Layout({ children }) {
       )}
 
       {/* Footer */}
-      {!isMessagesPage && !isLoginPromptPage && !isSwapDetailPage && (
-        <footer className="flex-shrink-0 bg-white/80 backdrop-blur-md border-t border-slate-200/60 mt-1">
-          <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-            <div className="text-center text-sm text-slate-500">
-              <p>
-                &copy; {new Date().getFullYear()} SkillSwap. Connect, learn, and
-                grow together.
-              </p>
-            </div>
-          </div>
-        </footer>
-      )}
+      {!isMessagesPage && !isLoginPromptPage && !isSwapDetailPage && <Footer />}
     </div>
   );
 }

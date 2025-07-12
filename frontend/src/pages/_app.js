@@ -14,7 +14,6 @@ export default function App({ Component, pageProps }) {
 
   // Initialize user store on app load
   useEffect(() => {
-    console.log('Initializing app...');
     init();
     
     // Ensure theme class is set on initial load
@@ -28,18 +27,9 @@ export default function App({ Component, pageProps }) {
 
   useEffect(() => {
     // Debug logging
-    console.log("Auth Debug:", { 
-      user: user ? { id: user._id, name: user.name, email: user.email } : null, 
-      loading, 
-      path: router.pathname,
-      hasUser: !!user,
-      userType: user ? 'authenticated' : 'not authenticated'
-    });
     
     if (!loading && !user && protectedRoutes.includes(router.pathname)) {
-      console.log(
-        "Redirecting to /auth/login because user is not authenticated"
-      );
+      
       router.replace("/auth/login");
     }
   }, [user, loading, router.pathname]);

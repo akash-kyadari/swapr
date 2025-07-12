@@ -26,27 +26,23 @@ export default function Login() {
   const handleGoogle = () => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
     const googleAuthUrl = apiUrl + "/api/auth/google";
-    
-    console.log('Debug Google OAuth:', {
-      apiUrl,
-      googleAuthUrl,
-      hasApiUrl: !!apiUrl,
-      fullUrl: googleAuthUrl
-    });
-    
+
     if (!apiUrl) {
-      addToast({ message: "API URL not configured. Please check environment variables.", type: "error" });
+      addToast({
+        message: "API URL not configured. Please check environment variables.",
+        type: "error",
+      });
       return;
     }
-    
+
     window.location.href = googleAuthUrl;
   };
 
   return (
     <>
       <Head>
-        <title>Sign In - SkillSwap</title>
-        <meta name="description" content="Sign in to your SkillSwap account" />
+        <title>Sign In - Swapr</title>
+        <meta name="description" content="Sign in to your Swapr account" />
       </Head>
 
       <div className="flex items-center justify-center min-h-[80vh] px-4  sm:px-6 lg:px-8 w-full md:w-[35rem]">
@@ -55,7 +51,7 @@ export default function Login() {
           <div className="mb-6 text-center">
             <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>
             <p className="mt-2 text-sm text-gray-500">
-              Sign in to your SkillSwap account
+              Sign in to your Swapr account
             </p>
           </div>
 

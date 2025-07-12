@@ -32,10 +32,10 @@ export default function Register() {
   return (
     <>
       <Head>
-        <title>Create Account - SkillSwap</title>
+        <title>Create Account - Swapr</title>
         <meta
           name="description"
-          content="Join SkillSwap and start exchanging skills with professionals"
+          content="Join Swapr and start exchanging skills with professionals"
         />
       </Head>
 
@@ -45,7 +45,7 @@ export default function Register() {
           <div className="mb-6 text-center">
             <h1 className="text-3xl font-bold text-gray-900">Create Account</h1>
             <p className="mt-2 text-sm text-gray-500">
-              Join SkillSwap and start exchanging skills
+              Join Swapr and start exchanging skills
             </p>
           </div>
 

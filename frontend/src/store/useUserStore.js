@@ -1,50 +1,46 @@
-import { create } from 'zustand';
-import { apiFetch } from '../utils/api';
+import { create } from "zustand";
+import { apiFetch } from "../utils/api";
 
 const useUserStore = create((set, get) => ({
   user: null,
   loading: true,
-  error: '',
+  error: "",
 
-  setUser: user => set({ user }),
-  setLoading: loading => set({ loading }),
-  setError: error => set({ error }),
+  setUser: (user) => set({ user }),
+  setLoading: (loading) => set({ loading }),
+  setError: (error) => set({ error }),
 
   // Get token from localStorage
   getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('auth-token');
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("auth-token");
     }
     return null;
   },
 
   // Set token in localStorage
   setToken: (token) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('auth-token', token);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("auth-token", token);
     }
   },
 
   // Clear token from localStorage
   clearToken: () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth-token');
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("auth-token");
     }
   },
 
   // Fetch user from backend using stored token
   fetchUser: async () => {
-    set({ loading: true, error: '' });
+    set({ loading: true, error: "" });
     try {
-      console.log('Fetching user data...');
       // For Google OAuth, the token is in httpOnly cookies, so we don't need to check localStorage
       // The apiFetch function will automatically include cookies with credentials: 'include'
-      const user = await apiFetch('/api/users/me');
+      const user = await apiFetch("/api/users/me");
       set({ user, loading: false });
-      console.log('User fetched successfully:', user);
     } catch (err) {
-      console.log('User fetch failed:', err);
-      console.log('Error details:', err.message);
       set({ user: null, loading: false });
       // Don't clear localStorage token here since Google OAuth uses cookies
       // Only clear if it's a localStorage-based token
@@ -57,26 +53,34 @@ const useUserStore = create((set, get) => ({
 
   // Signup
   signup: async (form, addToast) => {
-    set({ loading: true, error: '' });
+    set({ loading: true, error: "" });
     try {
-      const response = await apiFetch('/api/auth/register', {
-        method: 'POST',
+      const response = await apiFetch("/api/auth/register", {
+        method: "POST",
         body: JSON.stringify(form),
       });
-      
+
       // Store token if provided
       if (response.token) {
         get().setToken(response.token);
       }
-      
+
       await get().fetchUser();
-      set({ error: '' });
-      if (addToast) addToast({ message: 'Account created successfully! Welcome to SkillSwap.', type: 'success' });
-      if (typeof window !== 'undefined') window.location.href = '/';
+      set({ error: "" });
+      if (addToast)
+        addToast({
+          message: "Account created successfully! Welcome to Swapr.",
+          type: "success",
+        });
+      if (typeof window !== "undefined") window.location.href = "/";
       return true;
     } catch (err) {
       set({ error: err.message });
-      if (addToast) addToast({ message: err.message || 'Failed to create account', type: 'error' });
+      if (addToast)
+        addToast({
+          message: err.message || "Failed to create account",
+          type: "error",
+        });
       return false;
     } finally {
       set({ loading: false });
@@ -85,26 +89,28 @@ const useUserStore = create((set, get) => ({
 
   // Login
   login: async (form, addToast) => {
-    set({ loading: true, error: '' });
+    set({ loading: true, error: "" });
     try {
-      const response = await apiFetch('/api/auth/login', {
-        method: 'POST',
+      const response = await apiFetch("/api/auth/login", {
+        method: "POST",
         body: JSON.stringify(form),
       });
-      
+
       // Store token if provided
       if (response.token) {
         get().setToken(response.token);
       }
-      
+
       await get().fetchUser();
-      set({ error: '' });
-      if (addToast) addToast({ message: 'Logged in successfully!', type: 'success' });
-      if (typeof window !== 'undefined') window.location.href = '/';
+      set({ error: "" });
+      if (addToast)
+        addToast({ message: "Logged in successfully!", type: "success" });
+      if (typeof window !== "undefined") window.location.href = "/";
       return true;
     } catch (err) {
       set({ error: err.message });
-      if (addToast) addToast({ message: err.message || 'Failed to login', type: 'error' });
+      if (addToast)
+        addToast({ message: err.message || "Failed to login", type: "error" });
       return false;
     } finally {
       set({ loading: false });
@@ -113,32 +119,32 @@ const useUserStore = create((set, get) => ({
 
   // Logout
   logout: async (addToast) => {
-    console.log('Logout initiated...');
     set({ loading: true });
-    
+
     try {
       // Call backend logout to clear the cookie
-      console.log('Calling backend logout endpoint...');
-      await apiFetch('/api/auth/logout');
-      console.log('Backend logout successful');
-      if (addToast) addToast({ message: 'Logged out successfully.', type: 'info' });
+      await apiFetch("/api/auth/logout");
+      if (addToast)
+        addToast({ message: "Logged out successfully.", type: "info" });
     } catch (err) {
-      console.error('Logout error:', err);
-      if (addToast) addToast({ message: 'Logout failed. Please try again.', type: 'error' });
+      console.error("Logout error:", err);
+      if (addToast)
+        addToast({
+          message: "Logout failed. Please try again.",
+          type: "error",
+        });
     } finally {
       // Always clear local state and localStorage token regardless of backend response
-      console.log('Clearing local state and localStorage...');
+
       set({ user: null, loading: false });
       get().clearToken();
-      
+
       // Verify localStorage is cleared
-      const remainingToken = localStorage.getItem('auth-token');
-      console.log('Remaining token in localStorage:', remainingToken ? 'EXISTS' : 'CLEARED');
-      
+      const remainingToken = localStorage.getItem("auth-token");
+
       // Redirect to home page
-      if (typeof window !== 'undefined') {
-        console.log('Redirecting to home page...');
-        window.location.href = '/';
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
       }
     }
   },
@@ -149,4 +155,4 @@ const useUserStore = create((set, get) => ({
   },
 }));
 
-export default useUserStore; 
+export default useUserStore;

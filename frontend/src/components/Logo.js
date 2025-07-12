@@ -1,13 +1,12 @@
-export default function SwaprLogo({ size = 120, className = '' }) {
+export default function SwaprLogo({ size = 100, className = '' }) {
   return (
     <div
       className={`flex items-center gap-3 ${className}`}
       style={{
         minHeight: size,
-        padding: '0.5rem 1rem',
         borderRadius: '0.75rem',
         backgroundColor: '#ffffff',
-        scale: '1.3', // Fully transparent
+        scale: '1.0', // Fully transparent
       }}
     >
       {/* Exchange arrows icon */}
